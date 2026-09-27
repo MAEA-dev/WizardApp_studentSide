@@ -6,9 +6,8 @@ export default function SpriteSheet({
   frameWidth = 128,
   frameHeight = 128,
   frameCount = 6,
-  fps = 8,
+  fps = 6,
   scale = 1,
-  loopDelay = 100,
 }) {
   const [frameIndex, setFrameIndex] = useState(0);
   const timeoutRef = useRef(null);
@@ -28,22 +27,15 @@ export default function SpriteSheet({
       currentFrameRef.current += 1;
 
       if (currentFrameRef.current >= frameCount) {
-        currentFrameRef.current = frameCount - 1;
-        setFrameIndex(frameCount - 1);
-
-        timeoutRef.current = setTimeout(() => {
-          currentFrameRef.current = 0;
-          setFrameIndex(0);
-
-          timeoutRef.current = setTimeout(animate, frameSpeed);
-        }, loopDelay);
-
-        return;
+        currentFrameRef.current = 0;
       }
 
       setFrameIndex(currentFrameRef.current);
+
       timeoutRef.current = setTimeout(animate, frameSpeed);
     };
+
+    clearCurrentTimeout();
 
     currentFrameRef.current = 0;
     setFrameIndex(0);
@@ -53,7 +45,7 @@ export default function SpriteSheet({
     return () => {
       clearCurrentTimeout();
     };
-  }, [frameCount, fps, loopDelay]);
+  }, [frameCount, fps]);
 
   return (
     <View

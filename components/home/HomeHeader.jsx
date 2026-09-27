@@ -1,7 +1,10 @@
-import { StyleSheet, Text, View, Image } from "react-native";
+import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
 import { Fonts , FontSizes} from "../../constant/Fonts";
+import { useRouter } from "expo-router";
+
 
 export default function HomeHeader({ student, layout }) {
+  const router = useRouter();
   const { avatarSize, isSmall, isVerySmall, isNarrow } = layout;
 
   return (
@@ -14,7 +17,9 @@ export default function HomeHeader({ student, layout }) {
         },
       ]}
     >
+      
       <View style={styles.profileLeft}>
+      <TouchableOpacity onPress={() => router.push("/profile")}>
         <View
           style={[
             styles.avatarBox,
@@ -34,7 +39,7 @@ export default function HomeHeader({ student, layout }) {
             resizeMode="contain"
           />
         </View>
-
+        </TouchableOpacity>
         <View style={styles.profileInfo}>
           <Text
             style={[
@@ -57,7 +62,7 @@ export default function HomeHeader({ student, layout }) {
             ]}
             numberOfLines={1}
           >
-             {student.role}
+             Grade {student.profile.grade}
           </Text>
 
           <View style={styles.levelBadge}>

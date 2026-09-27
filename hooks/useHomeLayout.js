@@ -15,7 +15,7 @@ export const useHomeLayout = () => {
     isNarrow,
 
     avatarSize: isVerySmall ? 46 : isSmall ? 52 : 58,
-    wizardScale: isVerySmall ? 1 : isSmall ? 1.2 : 1.4,
+    wizardScale: isVerySmall ? 1 : isSmall ? 1 : 1.2,
     statHeight: isVerySmall ? 42 : isSmall ? 46 : 50,
 
     screenPadding: isVerySmall ? 7 : isSmall ? 9 : 11,

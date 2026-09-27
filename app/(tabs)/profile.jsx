@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
@@ -47,8 +47,8 @@ const getStudentName = (student) => {
   return fullName || "Student Wizard";
 };
 
-const getStudentRole = (student) => {
-  return student?.profile?.role || student?.role || "Student";
+const getStudentGrade = (student) => {
+  return student?.profile?.grade || "Student";
 };
 
 const Profile = () => {
@@ -66,19 +66,15 @@ const Profile = () => {
 
   const username = student?.username || "Student";
   const fullName = getStudentName(student);
-  const role = getStudentRole(student);
+  const grade = getStudentGrade(student);
 
-  const level = student?.level ?? 1;
-  const xp = student?.xp ?? 0;
-  const gold = student?.gold ?? 0;
-  const streak = student?.streak ?? 0;
 
   const handleAuthExit = async () => {
     try {
       await clearStudentLocalData();
       await signOut(auth);
 
-      router.replace("/login");
+      router.replace("(auth)/loginScreen");
     } catch (err) {
       console.log("Logout error:", err);
       Alert.alert("Error", err?.message || "Failed to logout.");
@@ -137,18 +133,18 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#FFD86B" />
           <Text style={styles.centerText}>Loading profile...</Text>
         </View>
-      </SafeAreaView>
+    
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+     
         <View style={styles.centerContainer}>
           <Text style={styles.errorText}>{error}</Text>
 
@@ -160,12 +156,12 @@ const Profile = () => {
             <Text style={styles.loginButtonText}>Back to Login</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+   
       <View style={styles.container}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -192,7 +188,7 @@ const Profile = () => {
             <Text style={styles.fullName}>{fullName}</Text>
 
             <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{role}</Text>
+              <Text style={styles.roleText}>Grade {grade}</Text>
             </View>
             {/*
                 <View style={styles.statsRow}>
@@ -220,7 +216,7 @@ const Profile = () => {
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+  
   );
 };
 

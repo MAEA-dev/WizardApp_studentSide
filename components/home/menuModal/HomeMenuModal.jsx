@@ -36,12 +36,6 @@ export default function HomeMenuModal({ visible, type, onClose }) {
           text: "Buy",
           onPress: () => {
             console.log("Buying item:", item.id);
-
-            // Later Firebase:
-            // 1. Check student gold
-            // 2. Deduct gold
-            // 3. Add item to inventory
-            // 4. Mark item as owned
           },
         },
       ]

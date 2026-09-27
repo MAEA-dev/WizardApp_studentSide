@@ -21,7 +21,7 @@ export default function MenuModalSection({ section, onBuyPress }) {
           />
         ))
       ) : (
-        <Text style={styles.emptyText}>No records yet.</Text>
+        <Text style={styles.emptyText}>no item yet.</Text>
       )}
     </View>
   );

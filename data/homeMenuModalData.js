@@ -11,24 +11,8 @@ export const homeMenuModalData = {
         icon: "shirt",
         type: "shop",
         items: [
-          {
-            id: "fire-mage-skin",
-            title: "Fire Mage Skin",
-            description: "A blazing wizard outfit.",
-            price: 300,
-            currency: "gold",
-            image: require("../assets/images/fireMage.png"),
-            available: true,
-          },
-          {
-            id: "water-mage-skin",
-            title: "Water Mage Skin",
-            description: "A calm magical robe.",
-            price: 250,
-            currency: "gold",
-            image: require("../assets/images/waterMage.png"),
-            available: true,
-          },
+          
+ 
         ],
       },
       {
@@ -38,24 +22,7 @@ export const homeMenuModalData = {
         icon: "albums",
         type: "shop",
         items: [
-          {
-            id: "power-card",
-            title: "Power Card",
-            description: "Boost your battle power.",
-            price: 120,
-            currency: "gold",
-            image: require("../assets/images/powerCard.png"),
-            available: true,
-          },
-          {
-            id: "shield-card",
-            title: "Shield Card",
-            description: "Protect your wizard.",
-            price: 100,
-            currency: "gold",
-            image: require("../assets/images/shieldCard.png"),
-            available: true,
-          },
+          
         ],
       },
     ],
@@ -73,14 +40,6 @@ export const homeMenuModalData = {
         icon: "shirt",
         type: "inventory",
         items: [
-          {
-            id: "default-wizard",
-            title: "Default Wizard",
-            description: "Your starting wizard skin.",
-            image: require("../assets/images/greenWizard.png"),
-            status: "Equipped",
-          },
-
         ],
       },
       {
@@ -101,16 +60,6 @@ export const homeMenuModalData = {
     subtitle: "Learning and battle records",
     icon: "time",
     sections: [
-      {
-        id: "completed-lessons",
-        tabTitle: "Lessons",
-        title: "Completed Lessons",
-        icon: "checkmark-circle",
-        type: "history",
-        items: [
-        
-        ],
-      },
       {
         id: "battle-history",
         tabTitle: "Battles",

@@ -5,8 +5,8 @@ export default function WizardAvatar({ scale }) {
   return (
     <View style={styles.wizardSection}>
       <SpriteSheet
-        source={require("../../assets/images/greenWizardidle.png")}
-        frameCount={8}
+        source={require("../../assets/images/waterMage/idle.png")}
+        frameCount={4}
         scale={scale}
       />
     </View>
