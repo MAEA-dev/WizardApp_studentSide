@@ -11,7 +11,7 @@ import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
 
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim(),
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
   databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,

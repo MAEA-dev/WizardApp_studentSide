@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.wizardlms"
+      "package": "com.maea.wizardlms"
     },
     "web": {
       "output": "static",
@@ -46,6 +46,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c6d7e25b-04d1-4bd2-a8b9-635b7ead20eb"
+      }
     }
   }
 }
