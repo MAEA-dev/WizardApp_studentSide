@@ -6,18 +6,14 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-import React, { useState } from "react";
+import React from "react";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Fonts } from "../../constant/Fonts";
-import BattleScreen from "../../components/battle/battleScreen";
+import { Fonts } from "../../constants/Fonts";
 
 const Battle = () => {
-  const [startedBattle, setStartedBattle] = useState(false);
-
-  if (startedBattle) {
-    return <BattleScreen onExitBattle={() => setStartedBattle(false)} />;
-  }
+  const router = useRouter();
 
   return (
     <ImageBackground
@@ -35,7 +31,7 @@ const Battle = () => {
           <TouchableOpacity
             activeOpacity={0.88}
             style={styles.modeCard}
-            onPress={() => setStartedBattle(true)}
+            onPress={() => router.push("/dungeon-battle")}
           >
             <View style={styles.cardGlow} />
 

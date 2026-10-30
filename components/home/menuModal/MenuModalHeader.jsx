@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Fonts } from "../../../constant/Fonts";
+import { Fonts } from "../../../constants/Fonts";
 
 export default function MenuModalHeader({ title, subtitle, icon, onClose }) {
   return (

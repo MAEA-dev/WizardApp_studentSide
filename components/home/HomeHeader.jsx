@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
-import { Fonts , FontSizes} from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 import { useRouter } from "expo-router";
 
 

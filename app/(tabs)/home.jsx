@@ -9,7 +9,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 import { useHomeLayout } from "../../hooks/useHomeLayout";
 import { useHomeData } from "../../hooks/useHomeData";
@@ -21,13 +21,13 @@ import WizardAvatar from "../../components/home/WizardAvatar";
 import DailyTaskCard from "../../components/home/DailyTaskCard";
 import HomeMenu from "../../components/home/HomeMenu";
 import HomeMenuModal from "../../components/home/menuModal/HomeMenuModal";
-import WizardMessage from "../../components/wizardModal";
+import WizardMessage from "../../components/shared/wizardModal";
 import HomeStatAllocationModal from "../../components/home/HomeStatAllocationModal";
 
 import {
   getTodayKey,
   markDailyRewardModalSeen,
-} from "../../service/lessonCompletionService";
+} from "../../services/lessonCompletionService";
 
 const Home = () => {
   const router = useRouter();
@@ -47,7 +47,6 @@ const Home = () => {
     expPercent,
     stats,
 
-    loadingCache,
     syncing,
     error,
     refreshStudent,

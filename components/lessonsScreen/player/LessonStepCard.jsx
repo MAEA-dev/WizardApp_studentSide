@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Fonts } from "../constant/Fonts";
-import TypewriterText from "./TypeWriterText";
+import { Fonts } from "../../../constants/Fonts";
+import TypewriterText from "../../shared/TypeWriterText";
 
 export default function LessonStepCard({
   step,

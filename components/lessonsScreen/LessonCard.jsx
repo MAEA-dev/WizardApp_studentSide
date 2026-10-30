@@ -2,7 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 const LessonCard = ({ lesson, onPress }) => {
   const completed = !!lesson.completed;

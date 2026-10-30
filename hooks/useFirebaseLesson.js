@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { listenLessonById } from "../service/lessonService";
+import { listenLessonById } from "../services/lessonService";
 
 export const useFirebaseLesson = (lessonId) => {
   const [lesson, setLesson] = useState(null);

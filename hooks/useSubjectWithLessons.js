@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { listenSubjectsByGradeLevel } from "../service/lessonService";
+import { listenSubjectsByGradeLevel } from "../services/lessonService";
 
 export const useSubjectsWithLessons = (gradeLevel) => {
   const [subjects, setSubjects] = useState([]);

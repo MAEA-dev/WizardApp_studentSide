@@ -8,7 +8,7 @@ import {
 
 import React from "react";
 
-import { Fonts } from "../constant/Fonts";
+import { Fonts } from "../../../constants/Fonts";
 
 const LessonCenterMessage = ({
   loading = false,

@@ -1,50 +1,48 @@
-# Welcome to your Expo app 👋
+# Wizard LMS student app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The student application is a JavaScript React Native app built with Expo SDK 54 and Expo Router.
 
-## Get started
+## Project structure
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+app/                         Expo Router screens and layouts
+assets/                      Images and other bundled assets
+components/
+  battle/                    Battle-mode UI
+  home/                      Home screen UI
+  lessonsScreen/              Lesson library and player UI
+    player/
+  shared/                    UI reused across features
+constants/                   Fonts and asset-preload definitions
+context/                     App-wide React contexts
+data/                        Static UI and game data
+hooks/                       Screen and interaction state
+services/                    Firebase and local-storage operations
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Keep route files inside `app/` so Expo Router continues to expose the same routes. Components should not access Firebase directly; use hooks for screen state and `services/` for persistence and backend calls.
 
-## Learn more
+## Data flow
 
-To learn more about developing your project with Expo, look at the following resources:
+- Screens in `app/` compose feature components and hooks.
+- `hooks/` manages view and interaction state.
+- `services/` handles Firebase Authentication, Firestore, Cloud Functions, Storage, and the AsyncStorage student cache.
+- Student progress and lesson rewards remain stored through the existing Firebase documents and transactions.
+- Firebase Auth uses browser persistence on web and AsyncStorage-backed persistence on native.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Development
 
-## Join the community
+Install dependencies and start Expo:
 
-Join our community of developers creating universal apps.
+```bash
+npm install
+npm start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Run the configured lint check:
+
+```bash
+npm run lint
+```
+
+Firebase configuration is read from the `EXPO_PUBLIC_FIREBASE_*` environment variables. Keep local `.env` values out of source control.

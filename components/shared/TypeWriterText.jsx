@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Text } from "react-native";
 
 export default function TypewriterText({
@@ -8,6 +8,8 @@ export default function TypewriterText({
   onDone,
 }) {
   const [displayedText, setDisplayedText] = useState("");
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     setDisplayedText("");
@@ -23,7 +25,7 @@ export default function TypewriterText({
 
       if (index >= text.length) {
         clearInterval(interval);
-        onDone?.();
+        onDoneRef.current?.();
       }
     }, speed);
 

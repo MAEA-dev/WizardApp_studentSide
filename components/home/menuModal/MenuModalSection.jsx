@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Fonts } from "../../../constant/Fonts";
+import { Fonts } from "../../../constants/Fonts";
 import MenuModalItem from "./MenuModalItem";
 
 export default function MenuModalSection({ section, onBuyPress }) {

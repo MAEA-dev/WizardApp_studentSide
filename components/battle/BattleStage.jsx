@@ -10,7 +10,7 @@ import {
 
 import SpriteAnimator from "./SpriteAnimator";
 import SkillEffect from "./skillEffect";
-import {Fonts} from "../../constant/Fonts"
+import {Fonts} from "../../constants/Fonts"
 
 import {
   wizardSprites,

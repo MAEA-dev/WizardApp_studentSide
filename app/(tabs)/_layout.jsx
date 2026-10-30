@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 const TabIcon = ({ name, focused, color }) => {
   return (

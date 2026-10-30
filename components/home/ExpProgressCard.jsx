@@ -1,8 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import { Ionicons } from "@expo/vector-icons";
 
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 const ExpProgressCard = ({
   xp = 0,

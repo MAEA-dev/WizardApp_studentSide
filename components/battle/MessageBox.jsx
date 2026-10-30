@@ -5,8 +5,8 @@ import {
   View,
 } from "react-native";
 
-import TypewriterText from "../TypeWriterText";
-import { Fonts } from "../../constant/Fonts";
+import TypewriterText from "../shared/TypeWriterText";
+import { Fonts } from "../../constants/Fonts";
 
 const MessageBox = ({ message }) => {
   return (

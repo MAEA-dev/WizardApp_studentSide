@@ -8,14 +8,15 @@ import MenuModalSection from "./MenuModalSection";
 
 export default function HomeMenuModal({ visible, type, onClose }) {
   const content = homeMenuModalData[type];
+  const sections = content?.sections;
 
   const [activeSectionId, setActiveSectionId] = useState(null);
 
   useEffect(() => {
-    if (content?.sections?.length > 0) {
-      setActiveSectionId(content.sections[0].id);
+    if (sections?.length > 0) {
+      setActiveSectionId(sections[0].id);
     }
-  }, [type]);
+  }, [sections]);
 
   if (!content) return null;
 

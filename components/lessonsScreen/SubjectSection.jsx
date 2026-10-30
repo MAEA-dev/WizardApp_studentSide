@@ -2,7 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 import LessonCard from "./LessonCard";
 
 const SubjectSection = ({ subject, onLessonPress }) => {

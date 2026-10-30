@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   Image,
@@ -26,6 +32,8 @@ const SpriteAnimator = ({
   const intervalRef = useRef(null);
   const finishTimeoutRef = useRef(null);
   const finishedRef = useRef(false);
+  const onAnimationFinishRef = useRef(onAnimationFinish);
+  onAnimationFinishRef.current = onAnimationFinish;
 
   const [frameIndex, setFrameIndex] = useState(0);
 
@@ -57,15 +65,15 @@ const SpriteAnimator = ({
     }
   };
 
-  const safelyFinishAnimation = () => {
+  const safelyFinishAnimation = useCallback(() => {
     if (finishedRef.current) return;
 
     finishedRef.current = true;
 
     finishTimeoutRef.current = setTimeout(() => {
-      onAnimationFinish?.(action);
+      onAnimationFinishRef.current?.(action);
     }, 0);
-  };
+  }, [action]);
 
   useEffect(() => {
     clearTimers();
@@ -120,6 +128,7 @@ const SpriteAnimator = ({
     animationFps,
     animationLoop,
     action,
+    safelyFinishAnimation,
   ]);
 
   if (!source) {

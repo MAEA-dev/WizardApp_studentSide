@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 export default function DailyTaskCard({ task, layout, onPress }) {
   const { isVerySmall } = layout;

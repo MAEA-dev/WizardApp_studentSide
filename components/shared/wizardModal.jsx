@@ -5,17 +5,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from "react-native";
 
-import SpriteSheet from "../components/SpriteSheet";
-import { Fonts } from "../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
-export default function WizardMessageModal({
+const wizardImages = {
+  default: require("../../assets/images/wizardSmile.png"),
+  success: require("../../assets/images/wizardSucces.png"),
+  wrong: require("../../assets/images/wizardSad.png"),
+  complete: require("../../assets/images/wizardCelebrate.png"),
+};
+
+export default function WizardMessage({
   visible,
   onClose,
   title = "Wizard Guide",
-  message = "What would you like to learn today",
+  message = "What would you like to learn today?",
   buttonText = "NEXT",
+  type = "default",
 }) {
   const { width, height } = useWindowDimensions();
 
@@ -23,10 +31,25 @@ export default function WizardMessageModal({
   const isWideScreen = width > 420;
 
   const wizardSize = Math.min(width * 0.48, isSmallScreen ? 145 : 185);
-  const wizardScale = wizardSize / 100;
 
   const horizontalPadding = width * 0.045;
   const boxPadding = width * 0.055;
+
+  const selectedWizard = wizardImages[type] || wizardImages.default;
+
+  const getThemeColor = () => {
+    if (type === "success") return "#64E6A8";
+    if (type === "wrong") return "#FF7A7A";
+    if (type === "complete") return "#FFD86B";
+    return "#FFD86B";
+  };
+
+  const getButtonText = () => {
+    if (type === "success") return "CONTINUE";
+    if (type === "wrong") return "CONTINUE";
+    if (type === "complete") return "CLAIM";
+    return buttonText;
+  };
 
   return (
     <Modal
@@ -42,7 +65,7 @@ export default function WizardMessageModal({
             styles.dialogArea,
             {
               paddingHorizontal: horizontalPadding,
-              paddingTop: wizardSize * 0.7,
+              paddingTop: wizardSize * 0.68,
               maxWidth: isWideScreen ? 430 : "100%",
             },
           ]}
@@ -54,16 +77,14 @@ export default function WizardMessageModal({
                 width: wizardSize,
                 height: wizardSize,
                 left: horizontalPadding,
-                top: 0,
+                top: -12,
               },
             ]}
           >
-            <SpriteSheet
-              source={require("../assets/images/wizardIdle.png")}
-              fps={7}
-              scale={wizardScale}
-              frameCount={4}
-              loopDelay={3000}
+            <Image
+              source={selectedWizard}
+              style={styles.wizardImage}
+              resizeMode="contain"
             />
           </View>
 
@@ -75,6 +96,7 @@ export default function WizardMessageModal({
                 paddingTop: isSmallScreen ? 18 : 22,
                 paddingHorizontal: boxPadding,
                 paddingBottom: isSmallScreen ? 14 : 18,
+                borderColor: getThemeColor(),
               },
             ]}
           >
@@ -83,6 +105,7 @@ export default function WizardMessageModal({
                 styles.title,
                 {
                   fontSize: isSmallScreen ? 18 : 21,
+                  color: getThemeColor(),
                 },
               ]}
             >
@@ -102,14 +125,15 @@ export default function WizardMessageModal({
             </Text>
 
             <View style={styles.footer}>
-            
               <TouchableOpacity
+                activeOpacity={0.85}
                 style={[
                   styles.button,
                   {
                     paddingVertical: isSmallScreen ? 8 : 13,
                     paddingHorizontal: isSmallScreen ? 14 : 16,
-                    paddingTop: 13
+                    paddingTop: 13,
+                    backgroundColor: getThemeColor(),
                   },
                 ]}
                 onPress={onClose}
@@ -122,7 +146,7 @@ export default function WizardMessageModal({
                     },
                   ]}
                 >
-                  {buttonText}
+                  {getButtonText()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -150,14 +174,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1,
+    zIndex: 3,
+  },
+
+  wizardImage: {
+    width: "100%",
+    height: "100%",
   },
 
   messageBox: {
     width: "100%",
     backgroundColor: "rgba(32, 20, 67, 0.97)",
     borderWidth: 3,
-    borderColor: "#FFD86B",
     borderRadius: 24,
     zIndex: 2,
 
@@ -170,7 +198,6 @@ const styles = StyleSheet.create({
 
   title: {
     fontFamily: Fonts.heading,
-    color: "#FFD86B",
     marginBottom: 8,
   },
 
@@ -184,12 +211,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-   
   },
 
-
   button: {
-    backgroundColor: "#FFD86B",
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#FFFFFF",

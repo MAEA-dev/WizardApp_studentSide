@@ -3,9 +3,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useFirebaseLesson } from "../../../hooks/useFirebaseLesson";
 
-import LessonPlayer from "../../../components/LessonPlayer";
-import LessonScreenWrapper from "../../../components/LessonScreenWrapper";
-import LessonCenterMessage from "../../../components/LessonCenterMessage";
+import LessonPlayer from "../../../components/lessonsScreen/player/LessonPlayer";
+import LessonScreenWrapper from "../../../components/lessonsScreen/player/LessonScreenWrapper";
+import LessonCenterMessage from "../../../components/lessonsScreen/player/LessonCenterMessage";
 
 const LessonDetails = () => {
   const router = useRouter();

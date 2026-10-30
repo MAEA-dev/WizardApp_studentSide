@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const LessonScreenWrapper = ({ children }) => {
   return (
     <ImageBackground
-      source={require("../assets/images/lessonsBg.png")}
+      source={require("../../../assets/images/lessonsBg.png")}
       style={styles.background}
       resizeMode="cover"
     >

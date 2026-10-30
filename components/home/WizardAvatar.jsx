@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import SpriteSheet from "../SpriteSheet";
+import SpriteSheet from "../shared/SpriteSheet";
 
 export default function WizardAvatar({ scale }) {
   return (

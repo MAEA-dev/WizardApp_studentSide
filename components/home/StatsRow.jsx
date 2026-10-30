@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 export default function StatsRow({ stats, layout }) {
   const { statHeight, isVerySmall } = layout;

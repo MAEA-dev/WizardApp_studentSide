@@ -1,10 +1,10 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 import React, { useCallback } from "react";
 
-import WizardMessage from "./wizardModal";
+import WizardMessage from "../../shared/wizardModal";
 
-import { useLessonFlow } from "../hooks/useLessonFlow";
-import { completeLessonAndReward } from "../service/lessonCompletionService";
+import { useLessonFlow } from "../../../hooks/useLessonFlow";
+import { completeLessonAndReward } from "../../../services/lessonCompletionService";
 
 import LessonHeader from "./LessonHeader";
 import LessonProgress from "./LessonProgress";

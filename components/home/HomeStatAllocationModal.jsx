@@ -10,8 +10,8 @@ import {
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Fonts } from "../../constant/Fonts";
-import { allocateStatPoint } from "../../service/studentStatsService";
+import { Fonts } from "../../constants/Fonts";
+import { allocateStatPoint } from "../../services/studentStatsService";
 
 const STAT_OPTIONS = [
   {

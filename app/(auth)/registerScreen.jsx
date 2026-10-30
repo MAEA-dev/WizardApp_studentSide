@@ -13,14 +13,14 @@ import {
 
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 import { useLoader } from "../../context/LoaderContext";
 
 import {
   createUser,
   getAuthErrorMessage,
-} from "../../service/firebaseAuth";
+} from "../../services/firebaseAuth";
 
 const RegisterScreen = () => {
   const router = useRouter();

@@ -8,7 +8,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { Asset } from "expo-asset";
 
 import { LoaderProvider } from "../context/LoaderContext";
-import { IMAGE_ASSETS } from "../constant/preloadAssets";
+import { IMAGE_ASSETS } from "../constants/preloadAssets";
 
 import {
   Fredoka_600SemiBold,

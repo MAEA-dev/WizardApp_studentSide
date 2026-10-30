@@ -15,11 +15,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 
-import { Fonts } from "../../constant/Fonts";
-import { auth } from "../../service/firebaseConfig";
+import { Fonts } from "../../constants/Fonts";
+import { auth } from "../../services/firebaseConfig";
 
 import { useStudentData } from "../../hooks/useStudentData";
-import { clearStudentLocalData } from "../../service/studentDataService";
+import { clearStudentLocalData } from "../../services/studentDataService";
 
 const profileMenuItems = [
   {
@@ -217,15 +217,6 @@ const Profile = () => {
         </ScrollView>
       </View>
   
-  );
-};
-
-const ProfileStat = ({ label, value }) => {
-  return (
-    <View style={styles.statBox}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
   );
 };
 

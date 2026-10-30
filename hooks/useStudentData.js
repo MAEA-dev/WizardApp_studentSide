@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   loadStudentCacheFirst,
   syncStudentFromFirebase,
-} from "../service/studentDataService";
+} from "../services/studentDataService";
 
 export const useStudentData = () => {
   const [student, setStudent] = useState(null);

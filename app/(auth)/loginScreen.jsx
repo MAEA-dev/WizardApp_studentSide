@@ -15,12 +15,12 @@ import {
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import { useLoader } from "../../context/LoaderContext"
-import { Fonts } from "../../constant/Fonts";
-import { prepareStudentAfterLogin } from "../../service/studentDataService";
+import { Fonts } from "../../constants/Fonts";
+import { prepareStudentAfterLogin } from "../../services/studentDataService";
 import {
   loginUsername,
   getAuthErrorMessage
-} from "../../service/firebaseAuth"
+} from "../../services/firebaseAuth"
 
 const LoginScreen = () => {
   const router = useRouter();

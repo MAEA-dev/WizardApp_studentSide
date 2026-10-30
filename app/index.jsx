@@ -9,8 +9,8 @@ import {
 import { useState } from "react";
 import { useRouter } from "expo-router";
 
-import { Fonts } from "../constant/Fonts";
-import WizardMessageModal from "../components/wizardMessageModal";
+import { Fonts } from "../constants/Fonts";
+import WizardMessageModal from "../components/shared/wizardMessageModal";
 
 export default function Index() {
   const router = useRouter();

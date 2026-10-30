@@ -11,14 +11,14 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useBattleSystem } from "../../hooks/useBattleSystem";
 import { useHomeData } from "../../hooks/useHomeData";
-import { getBattleQuestionsByGrade } from "../../service/battleService";
+import { getBattleQuestionsByGrade } from "../../services/battleService";
 
 import BattleStage from "./BattleStage";
 import MessageBox from "./MessageBox";
 import QuestionCard from "./QuestionCard";
 import AnswerChoices from "./AnswerChoices";
 import BattleFooter from "./BattleFooter";
-import WizardMessage from "../wizardModal";
+import WizardMessage from "../shared/wizardModal";
 
 const getStudentGradeLevel = (student) => {
   return (

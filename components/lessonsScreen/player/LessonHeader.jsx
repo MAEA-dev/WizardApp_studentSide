@@ -2,7 +2,7 @@
 
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Fonts } from "../constant/Fonts";
+import { Fonts } from "../../../constants/Fonts";
 
 export default function LessonHeader({ title, xp }) {
   return (

@@ -6,7 +6,7 @@ import {
   View,
 } from "react-native";
 
-import { Fonts } from "../../constant/Fonts";
+import { Fonts } from "../../constants/Fonts";
 
 const QuestionCard = ({ question }) => {
   return (
