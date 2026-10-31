@@ -13,7 +13,8 @@ components/
   lessonsScreen/              Lesson library and player UI
     player/
   shared/                    UI reused across features
-constants/                   Fonts and asset-preload 
+constants/                   Fonts and asset-preload definitions
+context/                     App-wide React contexts
 data/                        Static UI and game data
 hooks/                       Screen and interaction state
 services/                    Firebase and local-storage operations
@@ -44,6 +45,4 @@ Run the configured lint check:
 npm run lint
 ```
 
-
-
-Firebase configuration is read from the `EXPO_PUBLIC_FIREBASE_*` environment variables. Keep local `.env` values out of source control (which is our github repo).
+Firebase configuration is read from the `EXPO_PUBLIC_FIREBASE_*` environment variables. Keep local `.env` values out of source control.
