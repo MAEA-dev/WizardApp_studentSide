@@ -1,6 +1,7 @@
 // Tiny relay: pairs two phones by room code and forwards their moves.
 const { WebSocketServer } = require("ws");
-const wss = new WebSocketServer({ port: 5000, host: "0.0.0.0" });
+const port = Number(process.env.PORT) || 5000;
+const wss = new WebSocketServer({ port, host: "0.0.0.0" });
 const rooms = new Map();
 const send = (ws, o) => ws.readyState === 1 && ws.send(JSON.stringify(o));
 
@@ -36,4 +37,4 @@ wss.on("connection", (ws) => {
     r.length ? rooms.set(ws.room, r) : rooms.delete(ws.room);
   });
 });
-console.log("Wizard Duel relay listening on :8080");
+console.log(`Wizard Duel relay listening on :${port}`);

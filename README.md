@@ -45,4 +45,14 @@ Run the configured lint check:
 npm run lint
 ```
 
+## PvP battles
+
+Start the WebSocket relay from the project root:
+
+```bash
+npm run pvp:server
+```
+
+In the PvP screen, enter the computer's LAN address as `ws://<computer-ip>:5000` and use the same room code on both devices. Set `EXPO_PUBLIC_PVP_SERVER_URL` in `.env` to prefill the server address.
+
 Firebase configuration is read from the `EXPO_PUBLIC_FIREBASE_*` environment variables. Keep local `.env` values out of source control.

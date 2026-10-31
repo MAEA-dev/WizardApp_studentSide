@@ -143,7 +143,15 @@ function Lobby({ url, setUrl, room, setRoom, status, onJoin }) {
       <Text style={st.logo}>Wizard Duel</Text>
       <Text style={st.sub}>Two phones, one spellbook each.</Text>
       <Text style={st.label}>Server address</Text>
-      <TextInput style={st.input} value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} />
+      <TextInput
+        style={st.input}
+        value={url}
+        onChangeText={setUrl}
+        placeholder="ws://<computer-ip>:5000"
+        placeholderTextColor="#8f83bd"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
       <Text style={st.label}>Room code (same on both phones)</Text>
       <TextInput style={st.input} value={room} onChangeText={setRoom} autoCapitalize="characters" autoCorrect={false} />
       <Pressable style={st.btn} onPress={onJoin}><Text style={st.btnTxt}>Enter the duel</Text></Pressable>
@@ -189,7 +197,7 @@ function Duel({ s, send, dispatch, rematch, leave }) {
 /* ---------- app / networking ---------- */
 export default function App() {
   const [phase, setPhase] = useState('lobby'); // lobby | wait | duel
-  const [url, setUrl] = useState('ws://192.168.1.10:8080');
+  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_PVP_SERVER_URL || '');
   const [room, setRoom] = useState('MAGE1');
   const [status, setStatus] = useState('');
   const [s, dispatch] = useReducer(reducer, fresh(true));
@@ -199,6 +207,15 @@ export default function App() {
   const leave = () => { ws.current && ws.current.close(); ws.current = null; setPhase('lobby'); };
 
   const join = () => {
+    if (!url.trim()) {
+      setStatus('Enter the WebSocket server address.');
+      return;
+    }
+    if (!room.trim()) {
+      setStatus('Enter a room code to join the duel.');
+      return;
+    }
+
     setStatus('Connecting…');
     let sock;
     try { sock = new WebSocket(url.trim()); } catch (e) { return setStatus('Invalid server address.'); }
