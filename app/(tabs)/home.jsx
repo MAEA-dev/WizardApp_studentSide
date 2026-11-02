@@ -50,6 +50,7 @@ const Home = () => {
     syncing,
     error,
     refreshStudent,
+    setStudent,
     isHomeReady,
   } = useHomeData();
 
@@ -185,6 +186,8 @@ const Home = () => {
             visible={!!activeMenuModal}
             type={activeMenuModal}
             onClose={closeMenuModal}
+            student={student}
+            onStudentUpdated={setStudent}
           />
 
           <WizardMessage

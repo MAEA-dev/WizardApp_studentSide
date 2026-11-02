@@ -10,10 +10,8 @@ export const homeMenuModalData = {
         title: "Skin Shop",
         icon: "shirt",
         type: "shop",
-        items: [
-          
- 
-        ],
+        items: [],
+        emptyMessage: "No skins are available right now.",
       },
       {
         id: "card-shop",
@@ -21,9 +19,8 @@ export const homeMenuModalData = {
         title: "Card Shop",
         icon: "albums",
         type: "shop",
-        items: [
-          
-        ],
+        items: [],
+        emptyMessage: "No cards are available right now.",
       },
     ],
   },
@@ -39,8 +36,8 @@ export const homeMenuModalData = {
         title: "Skin Inventory",
         icon: "shirt",
         type: "inventory",
-        items: [
-        ],
+        items: [],
+        emptyMessage: "You don't own any skins yet. Visit the Shop to find one.",
       },
       {
         id: "card-inventory",
@@ -48,9 +45,8 @@ export const homeMenuModalData = {
         title: "Card Inventory",
         icon: "albums",
         type: "inventory",
-        items: [
-      
-        ],
+        items: [],
+        emptyMessage: "You don't own any cards yet. Visit the Shop to find one.",
       },
     ],
   },
@@ -66,14 +62,8 @@ export const homeMenuModalData = {
         title: "Battle History",
         icon: "shield",
         type: "history",
-        items: [
-          {
-            id: "no-battle",
-            title: "No battle records yet",
-            description: "Battle mode is still under development.",
-            status: "Pending",
-          },
-        ],
+        emptyMessage: "No battle records yet. Complete a dungeon battle to see it here.",
+        items: [],
       },
       {
         id: "win-rate",
@@ -81,26 +71,8 @@ export const homeMenuModalData = {
         title: "Win Rate",
         icon: "trophy",
         type: "history",
-        items: [
-          {
-            id: "wins",
-            title: "0 Wins",
-            description: "Total battles won.",
-            status: "0",
-          },
-          {
-            id: "losses",
-            title: "0 Losses",
-            description: "Total battles lost.",
-            status: "0",
-          },
-          {
-            id: "rate",
-            title: "0% Win Rate",
-            description: "Current battle performance.",
-            status: "0%",
-          },
-        ],
+        emptyMessage: "No battles yet. Complete a battle to see your statistics.",
+        items: [],
       },
     ],
   },

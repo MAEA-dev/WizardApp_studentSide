@@ -46,7 +46,7 @@ export default function MenuModalItem({ item, sectionType, onBuyPress }) {
           disabled={!item.available}
         >
           <Text style={styles.buyButtonText}>
-            {item.available ? "BUY" : "SOLD"}
+            {item.buttonLabel || (item.available ? "BUY" : "SOLD")}
           </Text>
         </TouchableOpacity>
       ) : (

@@ -128,6 +128,7 @@ const BattleScreen = ({ onExitBattle }) => {
 
     battleMessage,
     battleStatus,
+    battleRecordError,
 
     handleAnswer,
     resetBattle,
@@ -142,6 +143,8 @@ const BattleScreen = ({ onExitBattle }) => {
       maxHp: 1000,
       attack: 50,
     },
+    battleType: "dungeon",
+    enemy: "Monster",
   });
 
   const handleExitBattle = () => {
@@ -180,15 +183,21 @@ const BattleScreen = ({ onExitBattle }) => {
   };
 
   const getResultMessage = () => {
+    let message;
+
     if (isVictory) {
-      return "Amazing spell casting! You defeated the monster and cleared the dungeon.";
+      message =
+        "Amazing spell casting! You defeated the monster and cleared the dungeon.";
+    } else if (isDefeat) {
+      message =
+        "The monster won this round. Train your magic and try again!";
+    } else {
+      return "No published battle questions found for your grade level.";
     }
 
-    if (isDefeat) {
-      return "The monster won this round. Train your magic and try again!";
-    }
-
-    return "No published battle questions found for your grade level.";
+    return battleRecordError
+      ? `${message}\n\nBattle result could not be saved: ${battleRecordError}`
+      : message;
   };
 
   const getResultType = () => {

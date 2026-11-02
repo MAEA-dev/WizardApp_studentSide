@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+import { recordBattleResult } from "../services/battleStatsService";
+
 const DEFAULT_WIZARD = {
   maxHp: 100,
   attack: 20,
@@ -49,9 +51,15 @@ export const useBattleSystem = ({
   wizard = DEFAULT_WIZARD,
   monster = DEFAULT_MONSTER,
   timeLimit = DEFAULT_TIME_LIMIT,
+  battleType = "dungeon",
+  enemy = "Monster",
 }) => {
   const nextQuestionTimeoutRef = useRef(null);
   const skillEffectTimeoutRef = useRef(null);
+  const battleIdRef = useRef(
+    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  );
+  const hasRecordedResultRef = useRef(false);
 
   const wizardMaxHp = Number(wizard?.maxHp || DEFAULT_WIZARD.maxHp);
   const wizardAttack = Number(wizard?.attack || DEFAULT_WIZARD.attack);
@@ -81,6 +89,7 @@ export const useBattleSystem = ({
   const [battleMessage, setBattleMessage] = useState(
     "A monster appeared! Answer before the timer runs out."
   );
+  const [battleRecordError, setBattleRecordError] = useState(null);
 
   const battleStatus = useMemo(() => {
     if (monsterHp <= 0) return "won";
@@ -265,6 +274,10 @@ export const useBattleSystem = ({
 
   const resetBattle = useCallback(() => {
     clearBattleTimeouts();
+    battleIdRef.current =
+      `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    hasRecordedResultRef.current = false;
+    setBattleRecordError(null);
 
     setWizardHp(wizardMaxHp);
     setMonsterHp(monsterMaxHp);
@@ -294,6 +307,29 @@ export const useBattleSystem = ({
     questions,
     timeLimit,
   ]);
+
+  useEffect(() => {
+    if (
+      (battleStatus !== "won" && battleStatus !== "lost") ||
+      hasRecordedResultRef.current
+    ) {
+      return;
+    }
+
+    hasRecordedResultRef.current = true;
+
+    recordBattleResult({
+      result: battleStatus,
+      enemy,
+      battleType,
+      battleId: battleIdRef.current,
+    }).catch((error) => {
+      console.error("Record battle result error:", error);
+      setBattleRecordError(
+        error?.message || "Your battle result could not be saved."
+      );
+    });
+  }, [battleStatus, battleType, enemy]);
 
   useEffect(() => {
     resetBattle();

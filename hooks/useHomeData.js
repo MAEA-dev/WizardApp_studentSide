@@ -51,6 +51,7 @@ export const useHomeData = () => {
     syncing,
     error,
     refreshStudent,
+    setStudent,
   } = useStudentData();
 
   useFocusEffect(
@@ -86,6 +87,7 @@ export const useHomeData = () => {
     syncing,
     error,
     refreshStudent,
+    setStudent,
 
     isHomeReady: !!student && !isLoading,
   };

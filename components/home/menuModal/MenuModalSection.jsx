@@ -1,9 +1,22 @@
-import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Fonts } from "../../../constants/Fonts";
 import MenuModalItem from "./MenuModalItem";
 
-export default function MenuModalSection({ section, onBuyPress }) {
+export default function MenuModalSection({
+  section,
+  onBuyPress,
+  loading = false,
+  error = null,
+  onRefresh,
+}) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -11,17 +24,33 @@ export default function MenuModalSection({ section, onBuyPress }) {
         <Text style={styles.sectionTitle}>{section.title}</Text>
       </View>
 
-      {section.items?.length > 0 ? (
-        section.items.map((item) => (
-          <MenuModalItem
-            key={item.id}
-            item={item}
-            sectionType={section.type}
-            onBuyPress={onBuyPress}
-          />
-        ))
+      {loading ? (
+        <ActivityIndicator color="#FFD86B" />
+      ) : error ? (
+        <View>
+          <Text style={styles.emptyText}>{error}</Text>
+          <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>   
+      ) : section.items?.length > 0 ? (
+        <ScrollView
+          style={styles.itemsScroll}
+          showsVerticalScrollIndicator
+        >
+          {section.items.map((item) => (
+            <MenuModalItem
+              key={item.id}
+              item={item}
+              sectionType={section.type}
+              onBuyPress={onBuyPress}
+            />
+          ))}
+        </ScrollView>
       ) : (
-        <Text style={styles.emptyText}>no item yet.</Text>
+        <Text style={styles.emptyText}>
+          {section.emptyMessage || "No item yet."}
+        </Text>
       )}
     </View>
   );
@@ -50,9 +79,24 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
+  itemsScroll: {
+    maxHeight: 200,
+  },
+
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: 12,
     color: "#D8CFFF",
+  },
+
+  retryButton: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+  },
+
+  retryText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12,
+    color: "#FFD86B",
   },
 });

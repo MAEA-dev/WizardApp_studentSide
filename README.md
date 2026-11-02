@@ -26,7 +26,11 @@ Keep route files inside `app/` so Expo Router continues to expose the same route
 - Screens in `app/` compose feature components and hooks.
 - `hooks/` manages view and interaction state.
 - `services/` handles Firebase Authentication, Firestore, Cloud Functions, Storage, and the AsyncStorage student cache.
+- Battle completion is recorded by `useBattleSystem` through `battleStatsService`; `useBattleStats` loads the user's statistics and history for the home menu.
+- Battle totals and history are stored on `users/{uid}` and mirrored to the student cache after a result is recorded.
 - Student progress and lesson rewards remain stored through the existing Firebase documents and transactions.
+- Shop purchases atomically deduct gold and store `ownedSkins` and `ownedCards` on `users/{uid}`; the student cache and home-screen state refresh immediately after a purchase.
+- Inventory rows are derived from those owned IDs and the catalog in `data/shopItems.js`; repeated card purchases display as a quantity.
 - Firebase Auth uses browser persistence on web and AsyncStorage-backed persistence on native.
 
 ## Development
