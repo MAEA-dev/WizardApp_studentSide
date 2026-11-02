@@ -48,6 +48,10 @@ export async function connectToRoom(room, callbacks) {
   const roomRef = getRoomRef(normalizedRoom);
   const playerId = createId();
   const avatarId = getWizardAvatarId(callbacks.avatarId);
+  const username = String(callbacks.username || "").trim();
+  if (!username) {
+    throw new Error("Your account is missing a username.");
+  }
   let slot;
   let sessionId;
 
@@ -84,7 +88,7 @@ export async function connectToRoom(room, callbacks) {
     sessionId = startNewSession ? createId() : roomData.sessionId;
     const nextPlayers = {
       ...activePlayers,
-      [slot]: { id: playerId, avatarId, lastSeen: now },
+      [slot]: { id: playerId, username, avatarId, lastSeen: now },
     };
 
     transaction.set(roomRef, {
@@ -162,13 +166,19 @@ export async function connectToRoom(room, callbacks) {
       const rivalAvatarId = getWizardAvatarId(
         rival?.avatarId || DEFAULT_WIZARD_AVATAR,
       );
+      const rivalUsername =
+        typeof rival?.username === "string" && rival.username.trim()
+          ? rival.username.trim()
+          : "Opponent";
       callbacks.onOpponentAvatar?.(rivalAvatarId);
+      callbacks.onOpponentUsername?.(rivalUsername);
 
       if (rivalActive && !started) {
         started = true;
         callbacks.onStart?.({
           first: slot === "player1",
           avatarId: rivalAvatarId,
+          username: rivalUsername,
         });
       } else if (!rivalActive && started) {
         started = false;
