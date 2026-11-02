@@ -10,6 +10,10 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
+import {
+  DEFAULT_WIZARD_AVATAR,
+  getWizardAvatarId,
+} from "../../constants/wizardAvatars";
 import { db } from "../../services/firebaseConfig";
 
 const ROOM_COLLECTION = "pvpRooms";
@@ -20,7 +24,8 @@ const PLAYER_SLOTS = ["player1", "player2"];
 const createId = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
-const normalizeRoom = (value) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+const normalizeRoom = (value) =>
+  value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
 const getRoomRef = (room) =>
   doc(db, ROOM_COLLECTION, encodeURIComponent(normalizeRoom(room)));
@@ -42,6 +47,7 @@ export async function connectToRoom(room, callbacks) {
 
   const roomRef = getRoomRef(normalizedRoom);
   const playerId = createId();
+  const avatarId = getWizardAvatarId(callbacks.avatarId);
   let slot;
   let sessionId;
 
@@ -78,7 +84,7 @@ export async function connectToRoom(room, callbacks) {
     sessionId = startNewSession ? createId() : roomData.sessionId;
     const nextPlayers = {
       ...activePlayers,
-      [slot]: { id: playerId, lastSeen: now },
+      [slot]: { id: playerId, avatarId, lastSeen: now },
     };
 
     transaction.set(roomRef, {
@@ -115,7 +121,7 @@ export async function connectToRoom(room, callbacks) {
     movesUnsubscribe();
     const movesQuery = query(
       collection(roomRef, "sessions", currentSessionId, "moves"),
-      orderBy("createdAt", "asc")
+      orderBy("createdAt", "asc"),
     );
 
     movesUnsubscribe = onSnapshot(
@@ -129,7 +135,7 @@ export async function connectToRoom(room, callbacks) {
           }
         }
       },
-      reportError
+      reportError,
     );
   };
 
@@ -153,16 +159,23 @@ export async function connectToRoom(room, callbacks) {
       const rivalSlot = PLAYER_SLOTS.find((playerSlot) => playerSlot !== slot);
       const rival = latestPlayers[rivalSlot];
       const rivalActive = isPlayerActive(rival, Date.now());
+      const rivalAvatarId = getWizardAvatarId(
+        rival?.avatarId || DEFAULT_WIZARD_AVATAR,
+      );
+      callbacks.onOpponentAvatar?.(rivalAvatarId);
 
       if (rivalActive && !started) {
         started = true;
-        callbacks.onStart?.({ first: slot === "player1" });
+        callbacks.onStart?.({
+          first: slot === "player1",
+          avatarId: rivalAvatarId,
+        });
       } else if (!rivalActive && started) {
         started = false;
         callbacks.onWait?.({ reconnecting: false });
       }
     },
-    reportError
+    reportError,
   );
 
   heartbeatTimer = setInterval(() => {
@@ -186,15 +199,12 @@ export async function connectToRoom(room, callbacks) {
       throw new Error("Unsupported PvP move.");
     }
 
-    await addDoc(
-      collection(roomRef, "sessions", activeSessionId, "moves"),
-      {
-        type: move.type,
-        ...(move.id ? { id: move.id } : {}),
-        playerId,
-        createdAt: Date.now(),
-      }
-    );
+    await addDoc(collection(roomRef, "sessions", activeSessionId, "moves"), {
+      type: move.type,
+      ...(move.id ? { id: move.id } : {}),
+      playerId,
+      createdAt: Date.now(),
+    });
   };
 
   const leave = async () => {

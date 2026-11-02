@@ -3,6 +3,12 @@ import { View, Text, TextInput, Pressable, StyleSheet, Animated } from 'react-na
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { connectToRoom } from './firebaseRelay';
+import SpriteSheet from '../shared/SpriteSheet';
+import {
+  DEFAULT_WIZARD_AVATAR,
+  getWizardAvatar,
+  getWizardAvatarId,
+} from '../../constants/wizardAvatars';
 
 /* ---------- palette ---------- */
 const C = {
@@ -62,9 +68,10 @@ function reducer(s, a) {
 }
 
 /* ---------- wizard avatar (pure Views, styled like CSS) ---------- */
-function Wizard({ color, hits, flip }) {
+function Wizard({ avatarId, hits, flip }) {
   const shake = useRef(new Animated.Value(0)).current;
   const first = useRef(true);
+  const avatar = getWizardAvatar(avatarId);
   useEffect(() => {
     if (first.current) { first.current = false; return; }
     Animated.sequence([-10, 10, -6, 6, 0].map((v) =>
@@ -72,16 +79,11 @@ function Wizard({ color, hits, flip }) {
   }, [hits]);
   return (
     <Animated.View style={[st.wizard, { transform: [{ translateX: shake }, { scaleX: flip ? -1 : 1 }] }]}>
-      <View style={[st.hat, { borderBottomColor: color }]} />
-      <View style={[st.brim, { backgroundColor: color }]} />
-      <View style={st.face}>
-        <View style={st.eye} /><View style={[st.eye, { left: 28 }]} />
-        <View style={st.beard} />
-      </View>
-      <View style={[st.robe, { backgroundColor: color }]}>
-        <View style={st.sash} />
-      </View>
-      <View style={st.staff}><View style={st.orb} /></View>
+      <SpriteSheet
+        source={avatar.source}
+        frameCount={avatar.frameCount}
+        scale={1}
+      />
     </Animated.View>
   );
 }
@@ -160,14 +162,14 @@ function Lobby({ room, setRoom, status, onJoin }) {
   );
 }
 
-function Duel({ s, send, dispatch, rematch, leave }) {
+function Duel({ s, send, dispatch, rematch, leave, opponentAvatarId }) {
   const over = s.me.hp <= 0 || s.opp.hp <= 0;
   const won = s.opp.hp <= 0;
   return (
     <View style={{ flex: 1 }}>
       <View style={st.top}>
         <Stats p={s.opp} label="Rival wizard" align="center" />
-        <Wizard color="#7a2fbf" hits={s.hits.opp} flip />
+        <Wizard avatarId={opponentAvatarId} hits={s.hits.opp} flip />
       </View>
       <View style={st.mid}>
         <Text style={st.log}>{s.log}</Text>
@@ -199,6 +201,7 @@ export default function App() {
   const [phase, setPhase] = useState('lobby'); // lobby | wait | duel
   const [room, setRoom] = useState('');
   const [status, setStatus] = useState('');
+  const [opponentAvatarId, setOpponentAvatarId] = useState(DEFAULT_WIZARD_AVATAR);
   const [s, dispatch] = useReducer(reducer, fresh(true));
   const relay = useRef(null);
   const joining = useRef(false);
@@ -234,11 +237,15 @@ export default function App() {
     joining.current = true;
     const attempt = ++joinAttempt.current;
     setStatus('Connecting to Firebase…');
+    setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
     setPhase('wait');
 
     try {
       const currentRelay = await connectToRoom(room, {
-        onStart: ({ first }) => {
+        avatarId: DEFAULT_WIZARD_AVATAR,
+        onOpponentAvatar: setOpponentAvatarId,
+        onStart: ({ first, avatarId }) => {
+          setOpponentAvatarId(getWizardAvatarId(avatarId));
           dispatch({ t: 'reset', first });
           setStatus('');
           setPhase('duel');
@@ -296,6 +303,7 @@ export default function App() {
         )}
         {phase === 'duel' && (
           <Duel s={s} send={send} dispatch={dispatch} leave={leave}
+            opponentAvatarId={opponentAvatarId}
             rematch={() => { dispatch({ t: 'reset', first: false }); send({ type: 'rematch' }); }} />
         )}
       </SafeAreaView>
@@ -326,18 +334,7 @@ const st = StyleSheet.create({
   barTrack: { height: 10, width: '100%', backgroundColor: '#0c0920', borderRadius: 5, overflow: 'hidden' },
   barFill: { height: '100%' },
 
-  wizard: { width: 100, height: 150, alignItems: 'center', marginTop: 10 },
-  hat: { width: 0, height: 0, borderLeftWidth: 28, borderRightWidth: 28, borderBottomWidth: 54,
-    borderLeftColor: 'transparent', borderRightColor: 'transparent' },
-  brim: { width: 76, height: 9, borderRadius: 5, marginTop: -2 },
-  face: { width: 42, height: 38, backgroundColor: C.skin, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, marginTop: -2 },
-  eye: { position: 'absolute', top: 12, left: 10, width: 5, height: 5, borderRadius: 3, backgroundColor: C.ink },
-  beard: { position: 'absolute', bottom: -10, left: 6, width: 30, height: 24, backgroundColor: '#f5f5f5',
-    borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
-  robe: { width: 76, height: 56, borderTopLeftRadius: 22, borderTopRightRadius: 22, marginTop: -4, zIndex: -1 },
-  sash: { position: 'absolute', bottom: 12, width: '100%', height: 7, backgroundColor: C.gold },
-  staff: { position: 'absolute', right: -6, top: 40, width: 5, height: 108, backgroundColor: '#8a5a2b', borderRadius: 3 },
-  orb: { position: 'absolute', top: -9, left: -5, width: 15, height: 15, borderRadius: 8, backgroundColor: C.teal },
+  wizard: { width: 128, height: 128, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
 
   bookWrap: { flex: 5, paddingHorizontal: 8, paddingBottom: 6, justifyContent: 'flex-end' },
   book: { backgroundColor: C.leather, borderRadius: 16, padding: 10, borderWidth: 3, borderColor: C.leatherLo,
