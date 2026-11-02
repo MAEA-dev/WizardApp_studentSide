@@ -1,12 +1,21 @@
 import { StyleSheet, View } from "react-native";
 import SpriteSheet from "../shared/SpriteSheet";
+import {
+  DEFAULT_WIZARD_AVATAR,
+  getWizardAvatar,
+} from "../../constants/wizardAvatars";
 
-export default function WizardAvatar({ scale }) {
+export default function WizardAvatar({
+  scale,
+  avatarId = DEFAULT_WIZARD_AVATAR,
+}) {
+  const avatar = getWizardAvatar(avatarId);
+
   return (
     <View style={styles.wizardSection}>
       <SpriteSheet
-        source={require("../../assets/images/waterMage/idle.png")}
-        frameCount={4}
+        source={avatar.source}
+        frameCount={avatar.frameCount}
         scale={scale}
       />
     </View>

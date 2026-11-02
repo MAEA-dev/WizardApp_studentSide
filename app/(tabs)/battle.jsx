@@ -1,14 +1,13 @@
 import {
+  ImageBackground,
   StyleSheet,
   Text,
-  View,
-  ImageBackground,
   TouchableOpacity,
+  View,
 } from "react-native";
 
-import React from "react";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 import { Fonts } from "../../constants/Fonts";
 
@@ -64,29 +63,34 @@ const Battle = () => {
                 </View>
               </View>
             </View>
-
           </TouchableOpacity>
 
-          <View style={styles.lockedCard}>
-            <View style={styles.iconCircleLocked}>
-              <Ionicons name="lock-closed" size={24} color="#BDB4D8" />
+          <TouchableOpacity
+            activeOpacity={0.88}
+            style={styles.modeCard}
+            onPress={() => router.push("/pvp")}
+          >
+            <View style={styles.cardGlow} />
+
+            <View style={styles.iconCircle}>
+              <Ionicons name="people" size={30} color="#FFD84D" />
             </View>
 
             <View style={styles.modeInfo}>
-              <Text style={styles.lockedTitle}>PVP</Text>
+              <Text style={styles.modeTitle}>PVP BATTLE</Text>
 
-              <Text style={styles.lockedDescription}>
-                Coming soon. Challenge another student in a battle.
+              <Text style={styles.modeDescription}>
+                Challenge another student to a real-time wizard duel.
               </Text>
 
-              <View style={styles.lockedStatsRow}>
-                <View style={styles.lockedBadge}>
-                  <Ionicons name="people" size={12} color="#D9D1E8" />
-                  <Text style={styles.lockedBadgeText}>PLAYER VS PLAYER</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statBadge}>
+                  <Ionicons name="people" size={12} color="#FFFFFF" />
+                  <Text style={styles.statText}>PLAYER VS PLAYER</Text>
                 </View>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
     </ImageBackground>
@@ -108,7 +112,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20
+    paddingTop: 20,
   },
 
   titleBox: {
@@ -254,65 +258,4 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  lockedCard: {
-    width: "100%",
-    minHeight: 200,
-    backgroundColor: "rgba(32, 20, 67, 0.78)",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.25)",
-    borderRadius: 18,
-    padding: 16,
-    marginTop: 16,
-    opacity: 0.78,
-  },
-
-  iconCircleLocked: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.25)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  lockedTitle: {
-    fontFamily: Fonts.pixel,
-    fontSize: 13,
-    color: "#BDB4D8",
-    marginBottom: 8,
-  },
-
-  lockedDescription: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 12,
-    color: "#FFFFFF",
-    lineHeight: 18,
-    opacity: 0.75,
-  },
-
-  lockedStatsRow: {
-    flexDirection: "row",
-    marginTop: 12,
-  },
-
-  lockedBadge: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-
-  lockedBadgeText: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 10,
-    color: "#D9D1E8",
-  },
 });

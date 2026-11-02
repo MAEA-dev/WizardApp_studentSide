@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "wizardlms",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -18,9 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.maea.wizardlms"
+      "package": "com.anonymous.wizardlms"
     },
     "web": {
       "output": "static",
@@ -46,12 +44,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "c6d7e25b-04d1-4bd2-a8b9-635b7ead20eb"
-      }
     }
   }
 }
