@@ -2,6 +2,7 @@ import React, { useReducer, useRef, useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Animated } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { connectToRoom } from './firebaseRelay';
 
 /* ---------- palette ---------- */
 const C = {
@@ -137,23 +138,22 @@ function Book({ s, onPlay, onEnd }) {
 }
 
 /* ---------- screens ---------- */
-function Lobby({ url, setUrl, room, setRoom, status, onJoin }) {
+function Lobby({ room, setRoom, status, onJoin }) {
   return (
     <View style={st.lobby}>
       <Text style={st.logo}>Wizard Duel</Text>
-      <Text style={st.sub}>Two phones, one spellbook each.</Text>
-      <Text style={st.label}>Server address</Text>
+      <Text style={st.sub}>Two phones, one spellbook each. Choose words to meet.</Text>
+      <Text style={st.label}>Shared room words</Text>
       <TextInput
         style={st.input}
-        value={url}
-        onChangeText={setUrl}
-        placeholder="ws://<computer-ip>:5000"
+        value={room}
+        onChangeText={setRoom}
+        placeholder="Enter the same words on both phones"
         placeholderTextColor="#8f83bd"
         autoCapitalize="none"
         autoCorrect={false}
+        maxLength={80}
       />
-      <Text style={st.label}>Room code (same on both phones)</Text>
-      <TextInput style={st.input} value={room} onChangeText={setRoom} autoCapitalize="characters" autoCorrect={false} />
       <Pressable style={st.btn} onPress={onJoin}><Text style={st.btnTxt}>Enter the duel</Text></Pressable>
       {!!status && <Text style={st.status}>{status}</Text>}
     </View>
@@ -197,53 +197,100 @@ function Duel({ s, send, dispatch, rematch, leave }) {
 /* ---------- app / networking ---------- */
 export default function App() {
   const [phase, setPhase] = useState('lobby'); // lobby | wait | duel
-  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_PVP_SERVER_URL || '');
-  const [room, setRoom] = useState('MAGE1');
+  const [room, setRoom] = useState('');
   const [status, setStatus] = useState('');
   const [s, dispatch] = useReducer(reducer, fresh(true));
-  const ws = useRef(null);
+  const relay = useRef(null);
+  const joining = useRef(false);
+  const joinAttempt = useRef(0);
 
-  const send = (o) => ws.current && ws.current.readyState === 1 && ws.current.send(JSON.stringify(o));
-  const leave = () => { ws.current && ws.current.close(); ws.current = null; setPhase('lobby'); };
-
-  const join = () => {
-    if (!url.trim()) {
-      setStatus('Enter the WebSocket server address.');
-      return;
+  const send = (move) => {
+    relay.current?.send(move).catch((error) => {
+      console.error('Unable to send PvP move:', error);
+      setStatus(`Unable to send move: ${error.message}`);
+    });
+  };
+  const leave = () => {
+    joinAttempt.current += 1;
+    joining.current = false;
+    const currentRelay = relay.current;
+    relay.current = null;
+    setPhase('lobby');
+    if (currentRelay) {
+      currentRelay.leave().catch((error) => {
+        console.error('Unable to leave PvP room:', error);
+        setStatus(`Unable to leave room: ${error.message}`);
+      });
     }
+  };
+
+  const join = async () => {
+    if (joining.current) return;
     if (!room.trim()) {
-      setStatus('Enter a room code to join the duel.');
+      setStatus('Enter the words your rival will use to join.');
       return;
     }
 
-    setStatus('Connecting…');
-    let sock;
-    try { sock = new WebSocket(url.trim()); } catch (e) { return setStatus('Invalid server address.'); }
-    ws.current = sock;
-    sock.onopen = () => sock.send(JSON.stringify({ type: 'join', room: room.trim() }));
-    sock.onerror = () => setStatus('Cannot reach the server. Check the address and Wi-Fi.');
-    sock.onclose = () => { if (ws.current === sock) { ws.current = null; setPhase((p) => { if (p !== 'lobby') setStatus('Connection closed.'); return 'lobby'; }); } };
-    sock.onmessage = (e) => {
-      let m; try { m = JSON.parse(e.data); } catch { return; }
-      if (m.type === 'wait') { setPhase('wait'); setStatus(''); }
-      else if (m.type === 'start') { dispatch({ t: 'reset', first: m.first }); setPhase('duel'); }
-      else if (m.type === 'full') { setStatus('That room already has two wizards.'); sock.close(); }
-      else if (m.type === 'play') dispatch({ t: 'play', who: 'opp', id: m.id });
-      else if (m.type === 'end') dispatch({ t: 'end', who: 'opp' });
-      else if (m.type === 'rematch') dispatch({ t: 'reset', first: true });
-      else if (m.type === 'left') { setStatus('Your rival left the duel.'); leave(); }
-    };
+    joining.current = true;
+    const attempt = ++joinAttempt.current;
+    setStatus('Connecting to Firebase…');
+    setPhase('wait');
+
+    try {
+      const currentRelay = await connectToRoom(room, {
+        onStart: ({ first }) => {
+          dispatch({ t: 'reset', first });
+          setStatus('');
+          setPhase('duel');
+        },
+        onWait: ({ reconnecting }) => {
+          setPhase('wait');
+          setStatus(reconnecting ? 'Your rival left. Waiting for another wizard…' : 'Your rival left the duel.');
+        },
+        onMove: (move) => {
+          if (move.type === 'play') dispatch({ t: 'play', who: 'opp', id: move.id });
+          else if (move.type === 'end') dispatch({ t: 'end', who: 'opp' });
+          else if (move.type === 'rematch') dispatch({ t: 'reset', first: true });
+        },
+        onError: (error) => {
+          console.error('Firebase PvP relay error:', error);
+          setStatus(`Firebase connection failed: ${error.message}`);
+          setPhase('lobby');
+          const currentRelay = relay.current;
+          relay.current = null;
+          currentRelay?.leave().catch((leaveError) => {
+            console.error('Unable to leave failed PvP room:', leaveError);
+          });
+        },
+      });
+      if (attempt !== joinAttempt.current) {
+        await currentRelay.leave();
+        return;
+      }
+      relay.current = currentRelay;
+      setStatus('');
+    } catch (error) {
+      if (attempt !== joinAttempt.current) return;
+      console.error('Unable to join PvP room:', error);
+      setPhase('lobby');
+      setStatus(error.code === 'ROOM_FULL'
+        ? 'That room already has two wizards.'
+        : `Unable to join room: ${error.message}`);
+    } finally {
+      if (attempt === joinAttempt.current) joining.current = false;
+    }
   };
 
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
       <SafeAreaView style={st.root}>
-        {phase === 'lobby' && <Lobby {...{ url, setUrl, room, setRoom, status, onJoin: join }} />}
+        {phase === 'lobby' && <Lobby {...{ room, setRoom, status, onJoin: join }} />}
         {phase === 'wait' && (
           <View style={st.lobby}>
             <Text style={st.logo}>Waiting…</Text>
-            <Text style={st.sub}>Ask your rival to join room {room.toUpperCase()}.</Text>
+            <Text style={st.sub}>Waiting for someone who entered the same room words.</Text>
+            {!!status && <Text style={st.status}>{status}</Text>}
             <Pressable style={[st.btn, st.ghost]} onPress={leave}><Text style={st.btnTxt}>Cancel</Text></Pressable>
           </View>
         )}
