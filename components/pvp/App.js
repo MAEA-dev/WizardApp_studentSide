@@ -51,7 +51,7 @@ const CARDS = [
     sh: 5,
     icon: "🛡️",
     color: "#4aa3ff",
-    text: "Shield 4",
+    text: "Shield 5",
   },
   {
     id: "fire",
@@ -60,7 +60,7 @@ const CARDS = [
     dmg: 6,
     icon: "🔥",
     color: "#ff7a3d",
-    text: "Deal 5",
+    text: "Deal 6",
   },
   {
     id: "heal",
@@ -79,7 +79,7 @@ const CARDS = [
     heal: 2,
     icon: "🌙",
     color: "#b57bff",
-    text: "Deal 4, heal 4",
+    text: "Deal 4, heal 2",
   },
   {
     id: "meteor",
