@@ -37,12 +37,12 @@ const MAX_HP = 20;
 const CARDS = [
   {
     id: "bolt",
-    name: "Arcane Bolt",
+    name: "Thunder Bolt",
     cost: 1,
     dmg: 3,
     icon: "⚡",
     color: "#f6c945",
-    text: "Deal 3",
+    text: "Retribution. Deals 3 damage.",
   },
   {
     id: "ward",
@@ -51,16 +51,16 @@ const CARDS = [
     sh: 5,
     icon: "🛡️",
     color: "#4aa3ff",
-    text: "Shield 5",
+    text: "Block. Block. Block - Absorbs 5 damage.",
   },
   {
     id: "fire",
-    name: "Fireball",
+    name: "Fire Tempest",
     cost: 2,
     dmg: 6,
     icon: "🔥",
     color: "#ff7a3d",
-    text: "Deal 6",
+    text: "Incinerate. Deals 6 damage.",
   },
   {
     id: "heal",
@@ -69,7 +69,7 @@ const CARDS = [
     heal: 5,
     icon: "💚",
     color: "#4ade80",
-    text: "Heal 5",
+    text: "I wanna heal, I wanna feel, what I thought was never real. Heals 5.",
   },
   {
     id: "drain",
@@ -79,7 +79,7 @@ const CARDS = [
     heal: 2,
     icon: "🌙",
     color: "#b57bff",
-    text: "Deal 4, heal 2",
+    text: "Death by snu snu. Deals 4 damage and heals 2.",
   },
   {
     id: "meteor",
@@ -88,7 +88,7 @@ const CARDS = [
     dmg: 10,
     icon: "☄️",
     color: "#ff4d4d",
-    text: "Deal 10",
+    text: "Dinosaurs be damned. Deals 10 damage.",
   },
 ];
 const PER_PAGE = 3;
@@ -392,7 +392,7 @@ export default function App() {
 
     joining.current = true;
     const attempt = ++joinAttempt.current;
-    setStatus("Connecting to Firebase…");
+    setStatus("Preparing arena...");
     setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
     setOpponentUsername("Opponent");
     setPhase("wait");
