@@ -223,7 +223,6 @@ export const listenSubjectsByGradeLevel = ({
         const publishedLessonsQuery = query(
           collection(db, "lessons"),
           where("subjectId", "==", subjectDoc.id),
-          where("gradeLevel", "==", normalizedGradeLevel),
           where("aiStatus", "==", "done"),
           where("isPublished", "==", true)
         );

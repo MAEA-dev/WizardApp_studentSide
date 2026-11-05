@@ -148,6 +148,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#FFD84D",
     borderRadius: 20,
+    marginBottom: 10,
     padding: 18,
     overflow: "hidden",
     shadowColor: "#000",
