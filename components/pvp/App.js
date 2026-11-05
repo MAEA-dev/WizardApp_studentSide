@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Pressable,
   StyleSheet,
@@ -297,6 +298,7 @@ function Duel({
   dispatch,
   rematch,
   leave,
+  surrender,
   opponentAvatarId,
   opponentUsername,
 }) {
@@ -304,6 +306,14 @@ function Duel({
   const won = s.opp.hp <= 0;
   return (
     <View style={{ flex: 1 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Surrender and exit the battle"
+        style={st.exitBtn}
+        onPress={surrender}
+      >
+        <Text style={st.exitBtnText}>Exit</Text>
+      </Pressable>
       <View style={st.top}>
         <Stats p={s.opp} label={opponentUsername} align="center" />
         <Wizard avatarId={opponentAvatarId} hits={s.hits.opp} flip />
@@ -361,6 +371,7 @@ export default function App() {
   const [s, dispatch] = useReducer(reducer, fresh(true));
   const relay = useRef(null);
   const joining = useRef(false);
+  const surrendering = useRef(false);
   const joinAttempt = useRef(0);
 
   const send = (move) => {
@@ -380,6 +391,32 @@ export default function App() {
         console.error("Unable to leave PvP room:", error);
         setStatus(`Unable to leave room: ${error.message}`);
       });
+    }
+  };
+  const surrender = async () => {
+    if (surrendering.current) return;
+    const currentRelay = relay.current;
+    if (!currentRelay) {
+      setStatus("Unable to surrender: your room connection is unavailable.");
+      return;
+    }
+
+    surrendering.current = true;
+    try {
+      await currentRelay.surrender();
+      if (relay.current === currentRelay) relay.current = null;
+      joinAttempt.current += 1;
+      joining.current = false;
+      dispatch({ t: "reset", first: true });
+      setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
+      setOpponentUsername("Opponent");
+      setPhase("lobby");
+      setStatus("You surrendered. The room is ready for a new battle.");
+    } catch (error) {
+      console.error("Unable to surrender from PvP room:", error);
+      setStatus(`Unable to surrender: ${error.message}`);
+    } finally {
+      surrendering.current = false;
     }
   };
 
@@ -423,6 +460,16 @@ export default function App() {
               ? "Your rival left. Waiting for another wizard…"
               : "Your rival left the duel.",
           );
+        },
+        onSurrender: ({ username: rivalUsername }) => {
+          relay.current = null;
+          dispatch({ t: "reset", first: true });
+          setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
+          setOpponentUsername("Opponent");
+          setPhase("lobby");
+          const message = `${rivalUsername || "Your opponent"} surrendered. You win!`;
+          setStatus(message);
+          Alert.alert("Battle ended", message);
         },
         onMove: (move) => {
           if (move.type === "play")
@@ -487,6 +534,7 @@ export default function App() {
             send={send}
             dispatch={dispatch}
             leave={leave}
+            surrender={surrender}
             opponentAvatarId={opponentAvatarId}
             opponentUsername={opponentUsername}
             rematch={() => {
@@ -539,6 +587,17 @@ const st = StyleSheet.create({
   btnTxt: { color: C.ink, fontWeight: "800", fontSize: 16 },
   status: { color: "#ff9b86", textAlign: "center", marginTop: 12 },
 
+  exitBtn: {
+    position: "absolute",
+    top: 8,
+    left: 12,
+    zIndex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: C.ember,
+  },
+  exitBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
   top: {
     flex: 4,
     alignItems: "center",

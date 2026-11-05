@@ -7,7 +7,6 @@ import {
   query,
   runTransaction,
   serverTimestamp,
-  updateDoc,
 } from "firebase/firestore";
 
 import {
@@ -107,6 +106,7 @@ export async function connectToRoom(room, callbacks) {
   let movesUnsubscribe = () => {};
   let heartbeatTimer;
   let membershipRemoved = false;
+  let lastSurrenderEventId = null;
 
   const stopListeners = () => {
     clearInterval(heartbeatTimer);
@@ -153,6 +153,17 @@ export async function connectToRoom(room, callbacks) {
       const nextSessionId = roomData.sessionId;
       latestPlayers = roomData.players || {};
 
+      const surrender = roomData.surrender;
+      if (surrender?.eventId && surrender.eventId !== lastSurrenderEventId) {
+        lastSurrenderEventId = surrender.eventId;
+        if (surrender.playerId !== playerId) {
+          callbacks.onSurrender?.({ username: surrender.username });
+          closed = true;
+          stopListeners();
+          return;
+        }
+      }
+
       if (nextSessionId && nextSessionId !== activeSessionId) {
         activeSessionId = nextSessionId;
         started = false;
@@ -198,9 +209,21 @@ export async function connectToRoom(room, callbacks) {
       callbacks.onWait?.({ reconnecting: false });
     }
 
-    updateDoc(roomRef, {
-      [`players.${slot}.lastSeen`]: Date.now(),
-    }).catch(reportError);
+    runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(roomRef);
+      if (!snapshot.exists() || snapshot.data().players?.[slot]?.id !== playerId) {
+        return false;
+      }
+
+      transaction.update(roomRef, {
+        [`players.${slot}.lastSeen`]: Date.now(),
+      });
+      return true;
+    })
+      .then((stillMember) => {
+        if (!stillMember) clearInterval(heartbeatTimer);
+      })
+      .catch(reportError);
   }, HEARTBEAT_INTERVAL_MS);
 
   const send = async (move) => {
@@ -247,5 +270,33 @@ export async function connectToRoom(room, callbacks) {
     });
   };
 
-  return { send, leave };
+  const surrender = async () => {
+    if (closed) throw new Error("You are no longer connected to this room.");
+
+    const eventId = createId();
+    await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(roomRef);
+      if (!snapshot.exists()) {
+        throw new Error("The battle room is no longer available.");
+      }
+
+      const roomData = snapshot.data();
+      if (roomData.players?.[slot]?.id !== playerId) {
+        throw new Error("You are no longer a member of this battle room.");
+      }
+
+      transaction.set(roomRef, {
+        sessionId: createId(),
+        players: {},
+        paired: false,
+        surrender: { eventId, playerId, username },
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    closed = true;
+    stopListeners();
+  };
+
+  return { send, leave, surrender };
 }
