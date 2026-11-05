@@ -2,11 +2,13 @@ import {
   addDoc,
   collection,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 
 import {
@@ -34,6 +36,18 @@ const isPlayerActive = (player, now) =>
 
 const asError = (reason) =>
   reason instanceof Error ? reason : new Error(String(reason));
+
+async function clearSessionMoves(roomRef, currentSessionId) {
+  const moves = await getDocs(
+    collection(roomRef, "sessions", currentSessionId, "moves"),
+  );
+
+  for (let index = 0; index < moves.docs.length; index += 450) {
+    const batch = writeBatch(db);
+    moves.docs.slice(index, index + 450).forEach((move) => batch.delete(move.ref));
+    await batch.commit();
+  }
+}
 
 export async function connectToRoom(room, callbacks) {
   const normalizedRoom = normalizeRoom(room);
@@ -94,6 +108,7 @@ export async function connectToRoom(room, callbacks) {
       sessionId,
       players: nextPlayers,
       paired: Object.keys(nextPlayers).length === 2,
+      surrender: null,
       updatedAt: serverTimestamp(),
     });
   });
@@ -154,10 +169,17 @@ export async function connectToRoom(room, callbacks) {
       latestPlayers = roomData.players || {};
 
       const surrender = roomData.surrender;
-      if (surrender?.eventId && surrender.eventId !== lastSurrenderEventId) {
+      if (
+        surrender?.eventId &&
+        surrender.sessionId === activeSessionId &&
+        surrender.eventId !== lastSurrenderEventId
+      ) {
         lastSurrenderEventId = surrender.eventId;
         if (surrender.playerId !== playerId) {
-          callbacks.onSurrender?.({ username: surrender.username });
+          callbacks.onSurrender?.({
+            username: surrender.username,
+            acknowledge: () => acknowledgeSurrender(surrender.eventId),
+          });
           closed = true;
           stopListeners();
           return;
@@ -270,10 +292,26 @@ export async function connectToRoom(room, callbacks) {
     });
   };
 
+  async function acknowledgeSurrender(eventId) {
+    await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(roomRef);
+      if (!snapshot.exists()) return;
+
+      const roomData = snapshot.data();
+      if (
+        roomData.surrender?.eventId === eventId &&
+        Object.keys(roomData.players || {}).length === 0
+      ) {
+        transaction.delete(roomRef);
+      }
+    });
+  }
+
   const surrender = async () => {
     if (closed) throw new Error("You are no longer connected to this room.");
 
     const eventId = createId();
+    const surrenderedSessionId = activeSessionId;
     await runTransaction(db, async (transaction) => {
       const snapshot = await transaction.get(roomRef);
       if (!snapshot.exists()) {
@@ -289,13 +327,25 @@ export async function connectToRoom(room, callbacks) {
         sessionId: createId(),
         players: {},
         paired: false,
-        surrender: { eventId, playerId, username },
+        surrender: {
+          eventId,
+          sessionId: surrenderedSessionId,
+          playerId,
+          username,
+        },
         updatedAt: serverTimestamp(),
       });
     });
 
     closed = true;
     stopListeners();
+    try {
+      await clearSessionMoves(roomRef, surrenderedSessionId);
+      return true;
+    } catch (error) {
+      console.error("Unable to clear surrendered PvP battle data:", error);
+      return false;
+    }
   };
 
   return { send, leave, surrender };

@@ -312,7 +312,7 @@ function Duel({
         style={st.exitBtn}
         onPress={surrender}
       >
-        <Text style={st.exitBtnText}>Exit</Text>
+        <Text style={st.exitBtnText}>←</Text>
       </Pressable>
       <View style={st.top}>
         <Stats p={s.opp} label={opponentUsername} align="center" />
@@ -403,7 +403,7 @@ export default function App() {
 
     surrendering.current = true;
     try {
-      await currentRelay.surrender();
+      const cleanupComplete = await currentRelay.surrender();
       if (relay.current === currentRelay) relay.current = null;
       joinAttempt.current += 1;
       joining.current = false;
@@ -411,7 +411,11 @@ export default function App() {
       setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
       setOpponentUsername("Opponent");
       setPhase("lobby");
-      setStatus("You surrendered. The room is ready for a new battle.");
+      setStatus(
+        cleanupComplete
+          ? "You surrendered. The room is ready for a new battle."
+          : "You surrendered, but some battle data could not be cleared.",
+      );
     } catch (error) {
       console.error("Unable to surrender from PvP room:", error);
       setStatus(`Unable to surrender: ${error.message}`);
@@ -461,7 +465,7 @@ export default function App() {
               : "Your rival left the duel.",
           );
         },
-        onSurrender: ({ username: rivalUsername }) => {
+        onSurrender: ({ username: rivalUsername, acknowledge }) => {
           relay.current = null;
           dispatch({ t: "reset", first: true });
           setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
@@ -470,6 +474,9 @@ export default function App() {
           const message = `${rivalUsername || "Your opponent"} surrendered. You win!`;
           setStatus(message);
           Alert.alert("Battle ended", message);
+          acknowledge().catch((error) => {
+            console.error("Unable to clear surrendered PvP room:", error);
+          });
         },
         onMove: (move) => {
           if (move.type === "play")
@@ -595,9 +602,9 @@ const st = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: C.ember,
+    backgroundColor: "transparent",
   },
-  exitBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
+  exitBtnText: { color: "#fff", fontWeight: "800", fontSize: 42 },
   top: {
     flex: 4,
     alignItems: "center",
