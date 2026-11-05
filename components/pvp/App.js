@@ -1,8 +1,9 @@
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  BackHandler,
   Pressable,
   StyleSheet,
   Text,
@@ -393,7 +394,7 @@ export default function App() {
       });
     }
   };
-  const surrender = async () => {
+  const surrender = useCallback(async () => {
     if (surrendering.current) return;
     const currentRelay = relay.current;
     if (!currentRelay) {
@@ -422,7 +423,20 @@ export default function App() {
     } finally {
       surrendering.current = false;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "duel") return undefined;
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        surrender();
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [phase, surrender]);
 
   const join = async () => {
     if (joining.current) return;
