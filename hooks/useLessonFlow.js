@@ -87,6 +87,7 @@ export const useLessonFlow = (lesson, options = {}) => {
   } = options;
 
   const completionHandledRef = useRef(false);
+  const lessonStartedAtRef = useRef(Date.now());
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -153,6 +154,7 @@ export const useLessonFlow = (lesson, options = {}) => {
 
   const resetLessonFlow = useCallback(() => {
     completionHandledRef.current = false;
+    lessonStartedAtRef.current = Date.now();
 
     setCurrentStepIndex(0);
     setSelectedAnswers({});
@@ -192,6 +194,10 @@ export const useLessonFlow = (lesson, options = {}) => {
         correctAnswers,
         totalQuestions,
         answerDetails,
+        durationSeconds: Math.max(
+          1,
+          Math.round((Date.now() - lessonStartedAtRef.current) / 1000)
+        ),
       });
     } catch (error) {
       console.log("Lesson completion error:", error);

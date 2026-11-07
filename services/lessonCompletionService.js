@@ -141,6 +141,7 @@ const buildCompletedLessonData = ({
   correctAnswers,
   totalQuestions,
   answerDetails = [],
+  durationSeconds,
   dailyXp,
   dailyGold,
   dailyRewardClaimed,
@@ -168,6 +169,7 @@ const buildCompletedLessonData = ({
     wrongAnswers: safeWrongAnswers,
     totalQuestions: safeTotalQuestions,
     percentage,
+    durationSeconds: Math.max(1, Math.round(getNumber(durationSeconds))),
 
     answerDetails: cleanAnswerDetails(answerDetails),
 
@@ -201,6 +203,7 @@ export const completeLessonAndReward = async ({
   correctAnswers,
   totalQuestions,
   answerDetails = [],
+  durationSeconds,
 }) => {
   if (!lesson?.id) {
     throw new Error("Missing lesson id.");
@@ -286,6 +289,7 @@ export const completeLessonAndReward = async ({
       correctAnswers,
       totalQuestions,
       answerDetails,
+      durationSeconds,
       dailyXp,
       dailyGold,
       dailyRewardClaimed: isFirstLessonToday,

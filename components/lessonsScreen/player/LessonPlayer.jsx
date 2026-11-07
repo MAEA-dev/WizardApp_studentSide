@@ -25,6 +25,7 @@ const LessonPlayer = ({
       correctAnswers,
       totalQuestions,
       answerDetails,
+      durationSeconds,
     }) => {
       if (isReviewMode) {
         return {
@@ -50,6 +51,7 @@ const LessonPlayer = ({
         correctAnswers,
         totalQuestions,
         answerDetails,
+        durationSeconds,
       });
     },
     [lesson, isReviewMode]
