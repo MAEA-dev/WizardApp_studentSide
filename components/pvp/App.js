@@ -96,6 +96,7 @@ const CARDS = [
 const PER_PAGE = 3;
 const other = (w) => (w === "me" ? "opp" : "me");
 const manaFor = (turns) => Math.min(6, 2 + turns);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const fresh = (iGoFirst) => ({
   me: { hp: MAX_HP, sh: 0, mana: iGoFirst ? 3 : 0 },
@@ -103,6 +104,7 @@ const fresh = (iGoFirst) => ({
   turn: iGoFirst ? "me" : "opp",
   turns: { me: iGoFirst ? 1 : 0, opp: iGoFirst ? 0 : 1 },
   hits: { me: 0, opp: 0 },
+  manaUses: { me: 0, opp: 0 },
   log: iGoFirst
     ? "The duel begins. You strike first."
     : "The duel begins. Rival strikes first.",
@@ -129,11 +131,13 @@ function reducer(s, a) {
   const me = { ...s[who], mana: s[who].mana - card.cost };
   const foeS = { ...s[foe] };
   const hits = { ...s.hits };
+  const manaUses = { ...s.manaUses, [who]: s.manaUses[who] + 1 };
   if (card.dmg) {
     const soak = Math.min(foeS.sh, card.dmg);
     foeS.sh -= soak;
-    foeS.hp = Math.max(0, foeS.hp - (card.dmg - soak));
-    hits[foe] += 1;
+    const damage = card.dmg - soak;
+    foeS.hp = Math.max(0, foeS.hp - damage);
+    if (damage > 0) hits[foe] += 1;
   }
   if (card.sh) me.sh += card.sh;
   if (card.heal) me.hp = Math.min(MAX_HP, me.hp + card.heal);
@@ -142,42 +146,52 @@ function reducer(s, a) {
     [who]: me,
     [foe]: foeS,
     hits,
+    manaUses,
     log: `${who === "me" ? "You" : "Rival"} cast ${card.name}!`,
   };
 }
 
-function Wizard({ avatarId, hits, flip }) {
+function HitShake({ hits, children, style }) {
   const shake = useRef(new Animated.Value(0)).current;
-  const first = useRef(true);
-  const avatar = getWizardAvatar(avatarId);
+  const previousHits = useRef(hits);
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
+    if (hits <= previousHits.current) {
+      previousHits.current = hits;
       return;
     }
+    previousHits.current = hits;
+    shake.setValue(0);
     Animated.sequence(
-      [-10, 10, -6, 6, 0].map((v) =>
+      [-6, 6, -4, 4, 0].map((v) =>
         Animated.timing(shake, {
           toValue: v,
-          duration: 50,
+          duration: 45,
           useNativeDriver: true,
         }),
       ),
     ).start();
-  }, [hits]);
+    return () => shake.stopAnimation();
+  }, [hits, shake]);
+
   return (
-    <Animated.View
-      style={[
-        st.wizard,
-        { transform: [{ translateX: shake }, { scaleX: flip ? -1 : 1 }] },
-      ]}
-    >
-      <SpriteSheet
-        source={avatar.source}
-        frameCount={avatar.frameCount}
-        scale={1}
-      />
+    <Animated.View style={[style, { transform: [{ translateX: shake }] }]}>
+      {children}
     </Animated.View>
+  );
+}
+
+function Wizard({ avatarId, hits, flip }) {
+  const avatar = getWizardAvatar(avatarId);
+  return (
+    <HitShake hits={hits} style={st.wizard}>
+      <View style={{ transform: [{ scaleX: flip ? -1 : 1 }] }}>
+        <SpriteSheet
+          source={avatar.source}
+          frameCount={avatar.frameCount}
+          scale={1}
+        />
+      </View>
+    </HitShake>
   );
 }
 
@@ -194,31 +208,84 @@ function Bar({ value, max, color }) {
   );
 }
 
-function Stats({ p, label, align }) {
+function Stats({ p, label, align, hits, manaUses }) {
   return (
     <View style={{ alignItems: align, width: "100%" }}>
-      <Text style={st.name}>
-        {label} {p.hp}/{MAX_HP}
-        {p.sh ? `  🛡️${p.sh}` : ""}
-      </Text>
-      <Bar value={p.hp} max={MAX_HP} color={C.ember} />
-      <Text style={st.mana}>
-        {"◆".repeat(p.mana)}
-        <Text style={{ opacity: 0.25 }}>
-          {"◇".repeat(Math.max(0, 6 - p.mana))}
+      <HitShake hits={hits} style={{ width: "100%" }}>
+        <>
+          <Text style={st.name}>
+            {label} {p.hp}/{MAX_HP}
+            {p.sh ? `  🛡️${p.sh}` : ""}
+          </Text>
+          <Bar value={p.hp} max={MAX_HP} color={C.ember} />
+        </>
+      </HitShake>
+      <HitShake hits={manaUses}>
+        <Text style={st.mana}>
+          {"◆".repeat(p.mana)}
+          <Text style={{ opacity: 0.25 }}>
+            {"◇".repeat(Math.max(0, 6 - p.mana))}
+          </Text>
         </Text>
-      </Text>
+      </HitShake>
     </View>
   );
 }
 
 /* ---------- spellbook ---------- */
-function Book({ s, onPlay, onEnd }) {
+function SpellCard({ card, enabled, onPlay }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const [pressed, setPressed] = useState(false);
+
+  const play = () => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.06,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 110,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onPlay(card.id);
+  };
+
+  return (
+    <AnimatedPressable
+      disabled={!enabled}
+      onPress={play}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      style={[
+        st.card,
+        { borderColor: card.color, opacity: enabled ? 1 : 0.4 },
+        {
+          transform: [
+            { scale },
+            ...(pressed ? [{ translateY: -8 }] : []),
+          ],
+        },
+      ]}
+    >
+      <View style={[st.cost, { backgroundColor: card.color }]}>
+        <Text style={st.costTxt}>{card.cost}</Text>
+      </View>
+      <Text style={st.cardIcon}>{card.icon}</Text>
+      <Text style={st.cardName}>{card.name}</Text>
+      <Text style={st.cardText}>{card.text}</Text>
+    </AnimatedPressable>
+  );
+}
+
+function Book({ s, onPlay }) {
   const [page, setPage] = useState(0);
   const pages = Math.ceil(CARDS.length / PER_PAGE);
   const mine = s.turn === "me" && s.me.hp > 0 && s.opp.hp > 0;
   return (
-    <View style={st.bookWrap}>
+    <HitShake hits={s.hits.me} style={st.bookWrap}>
       <View style={st.book}>
         <View style={st.bookHead}>
           <Pressable
@@ -241,28 +308,12 @@ function Book({ s, onPlay, onEnd }) {
           {CARDS.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE).map((c) => {
             const ok = mine && s.me.mana >= c.cost;
             return (
-              <Pressable
-                key={c.id}
-                disabled={!ok}
-                onPress={() => onPlay(c.id)}
-                style={({ pressed }) => [
-                  st.card,
-                  { borderColor: c.color, opacity: ok ? 1 : 0.4 },
-                  pressed && { transform: [{ translateY: -8 }] },
-                ]}
-              >
-                <View style={[st.cost, { backgroundColor: c.color }]}>
-                  <Text style={st.costTxt}>{c.cost}</Text>
-                </View>
-                <Text style={st.cardIcon}>{c.icon}</Text>
-                <Text style={st.cardName}>{c.name}</Text>
-                <Text style={st.cardText}>{c.text}</Text>
-              </Pressable>
+              <SpellCard key={c.id} card={c} enabled={ok} onPlay={onPlay} />
             );
           })}
         </View>
       </View>
-    </View>
+    </HitShake>
   );
 }
 
@@ -316,7 +367,13 @@ function Duel({
         <Text style={st.exitBtnText}>←</Text>
       </Pressable>
       <View style={st.top}>
-        <Stats p={s.opp} label={opponentUsername} align="center" />
+        <Stats
+          p={s.opp}
+          label={opponentUsername}
+          align="center"
+          hits={s.hits.opp}
+          manaUses={s.manaUses.opp}
+        />
         <Wizard avatarId={opponentAvatarId} hits={s.hits.opp} flip />
       </View>
       <View style={st.mid}>
@@ -335,11 +392,16 @@ function Duel({
         </Pressable>
       </View>
       <View style={st.mine}>
-        <Stats p={s.me} label="You" align="flex-start" />
+        <Stats
+          p={s.me}
+          label="You"
+          align="flex-start"
+          hits={s.hits.me}
+          manaUses={s.manaUses.me}
+        />
       </View>
       <Book
         s={s}
-        onEnd={() => {}}
         onPlay={(id) => {
           dispatch({ t: "play", who: "me", id });
           send({ type: "play", id });
