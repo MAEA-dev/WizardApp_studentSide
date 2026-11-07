@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   onSnapshot,
   query,
   where,
@@ -26,6 +27,13 @@ const emptyUnsubscribe = () => {};
 
 const cleanText = (value) => {
   return String(value || "").trim();
+};
+
+const getActiveQuarter = (subject) => {
+  const quarter = Number(subject?.activeQuarter);
+  return Number.isInteger(quarter) && quarter >= 1 && quarter <= 4
+    ? quarter
+    : null;
 };
 
 const getSubjectName = (subject) => {
@@ -100,6 +108,7 @@ const formatLesson = ({ lessonDoc, subjectName }) => {
 
     status: lesson.status || "published",
     isPublished: lesson.isPublished === true,
+    quarter: Number(lesson.quarter) || 1,
 
     createdAt: lesson.createdAt || null,
     updatedAt: lesson.updatedAt || null,
@@ -163,10 +172,29 @@ export const listenSubjectsByGradeLevel = ({
   };
 
   const emitSubjects = () => {
-    const subjects = applyCompletedLessonsToSubjects({
+    let subjects = applyCompletedLessonsToSubjects({
       subjectsMap,
       completedLessonsMap,
     });
+
+    subjects = subjects
+      .filter((subject) => subject.active !== false)
+      .map((subject) => {
+        const activeQuarter = getActiveQuarter(subject);
+        if (activeQuarter === null) return subject;
+        const lessons = subject.activeQuarterOpen
+          ? subject.lessons.filter(
+              (lesson) => Number(lesson.quarter) === activeQuarter
+            )
+          : [];
+
+        return {
+          ...subject,
+          lessons,
+          lessonCount: lessons.length,
+          completedLessons: lessons.filter((lesson) => lesson.completed).length,
+        };
+      });
 
     onSuccess(subjects);
   };
@@ -223,7 +251,6 @@ export const listenSubjectsByGradeLevel = ({
         const publishedLessonsQuery = query(
           collection(db, "lessons"),
           where("subjectId", "==", subjectDoc.id),
-          where("gradeLevel", "==", normalizedGradeLevel),
           where("aiStatus", "==", "done"),
           where("isPublished", "==", true)
         );
@@ -299,12 +326,40 @@ export const listenLessonById = ({
         return;
       }
 
-      const formattedLesson = formatLesson({
-        lessonDoc: lessonSnapshot,
-        subjectName: lesson.subjectName || "",
-      });
+      const subjectSnapshotPromise = lesson.subjectId
+        ? getDoc(doc(db, "subjects", lesson.subjectId))
+        : Promise.resolve(null);
+      subjectSnapshotPromise
+        .then((subjectSnapshot) => {
+          const subject = subjectSnapshot?.exists() ? subjectSnapshot.data() : null;
+          const activeQuarter = getActiveQuarter(subject);
 
-      onSuccess(formattedLesson);
+          if (subject?.active === false) {
+            onError(new Error("This subject is not available to students."));
+            return;
+          }
+
+          if (
+            subject &&
+            activeQuarter !== null &&
+            (!subject.activeQuarterOpen ||
+              Number(lesson.quarter) !== activeQuarter)
+          ) {
+            onError(new Error("This lesson is not available in the active quarter."));
+            return;
+          }
+
+          onSuccess(
+            formatLesson({
+              lessonDoc: lessonSnapshot,
+              subjectName: lesson.subjectName || "",
+            })
+          );
+        })
+        .catch((error) => {
+          console.error("Unable to verify lesson availability:", error);
+          onError(error);
+        });
     },
 
     (error) => {
