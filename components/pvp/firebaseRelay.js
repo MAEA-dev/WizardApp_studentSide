@@ -1,25 +1,22 @@
 import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
+  onChildAdded,
+  onDisconnect,
+  onValue,
+  push,
+  ref,
+  remove,
   runTransaction,
   serverTimestamp,
-  writeBatch,
-} from "firebase/firestore";
+} from "firebase/database";
 
 import {
   DEFAULT_WIZARD_AVATAR,
   getWizardAvatarId,
 } from "../../constants/wizardAvatars";
-import { db } from "../../services/firebaseConfig";
+import { rtdb } from "../../services/firebaseConfig";
 
-const ROOM_COLLECTION = "pvpRooms";
-const HEARTBEAT_INTERVAL_MS = 10_000;
-const PLAYER_TIMEOUT_MS = 30_000;
+const ROOMS_PATH = "pvpRooms"; 
+const MOVES_PATH = "pvpMoves"; 
 const PLAYER_SLOTS = ["player1", "player2"];
 
 const createId = () =>
@@ -28,26 +25,11 @@ const createId = () =>
 const normalizeRoom = (value) =>
   value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
-const getRoomRef = (room) =>
-  doc(db, ROOM_COLLECTION, encodeURIComponent(normalizeRoom(room)));
-
-const isPlayerActive = (player, now) =>
-  player && now - player.lastSeen < PLAYER_TIMEOUT_MS;
+const toRoomKey = (room) =>
+  encodeURIComponent(normalizeRoom(room)).replace(/\./g, "%2E");
 
 const asError = (reason) =>
   reason instanceof Error ? reason : new Error(String(reason));
-
-async function clearSessionMoves(roomRef, currentSessionId) {
-  const moves = await getDocs(
-    collection(roomRef, "sessions", currentSessionId, "moves"),
-  );
-
-  for (let index = 0; index < moves.docs.length; index += 450) {
-    const batch = writeBatch(db);
-    moves.docs.slice(index, index + 450).forEach((move) => batch.delete(move.ref));
-    await batch.commit();
-  }
-}
 
 export async function connectToRoom(room, callbacks) {
   const normalizedRoom = normalizeRoom(room);
@@ -58,75 +40,77 @@ export async function connectToRoom(room, callbacks) {
     throw new Error("Room words must be 80 characters or fewer.");
   }
 
-  const roomRef = getRoomRef(normalizedRoom);
+  const roomKey = toRoomKey(normalizedRoom);
+  const roomRef = ref(rtdb, `${ROOMS_PATH}/${roomKey}`);
+  const roomMovesRef = ref(rtdb, `${MOVES_PATH}/${roomKey}`);
+  const sessionMovesRef = (id) => ref(rtdb, `${MOVES_PATH}/${roomKey}/${id}`);
+
   const playerId = createId();
   const avatarId = getWizardAvatarId(callbacks.avatarId);
   const username = String(callbacks.username || "").trim();
   if (!username) {
     throw new Error("Your account is missing a username.");
   }
+
   let slot;
   let sessionId;
+  let joinError = null;
 
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(roomRef);
-    const now = Date.now();
-    const roomData = snapshot.exists() ? snapshot.data() : {};
-    const currentPlayers = roomData.players || {};
-    const activePlayers = {};
-    let foundStalePlayer = false;
 
-    for (const playerSlot of PLAYER_SLOTS) {
-      const player = currentPlayers[playerSlot];
-      if (isPlayerActive(player, now)) {
-        activePlayers[playerSlot] = player;
-      } else if (player) {
-        foundStalePlayer = true;
-      }
-    }
+  const joinResult = await runTransaction(roomRef, (current) => {
+    joinError = null;
+    const data = current || {};
+    const players = data.players || {};
 
-    slot = PLAYER_SLOTS.find((playerSlot) => !activePlayers[playerSlot]);
+    slot = PLAYER_SLOTS.find((playerSlot) => !players[playerSlot]);
     if (!slot) {
-      const fullRoomError = new Error("That room already has two wizards.");
-      fullRoomError.code = "ROOM_FULL";
-      throw fullRoomError;
+      joinError = new Error("That room already has two wizards.");
+      joinError.code = "ROOM_FULL";
+      return; 
     }
 
-    const activePlayerCount = Object.keys(activePlayers).length;
+    const playerCount = Object.keys(players).length;
     const startNewSession =
-      !snapshot.exists() ||
-      activePlayerCount === 0 ||
-      foundStalePlayer ||
-      (roomData.paired && activePlayerCount === 1);
-    sessionId = startNewSession ? createId() : roomData.sessionId;
-    const nextPlayers = {
-      ...activePlayers,
-      [slot]: { id: playerId, username, avatarId, lastSeen: now },
-    };
+      !current || playerCount === 0 || (data.paired && playerCount === 1);
+    sessionId = startNewSession ? createId() : data.sessionId;
 
-    transaction.set(roomRef, {
+    const nextPlayers = {
+      ...players,
+      [slot]: { id: playerId, username, avatarId },
+    };
+    return {
       sessionId,
       players: nextPlayers,
       paired: Object.keys(nextPlayers).length === 2,
-      surrender: null,
       updatedAt: serverTimestamp(),
-    });
+    };
   });
+  if (joinError) throw joinError;
+  if (!joinResult.committed) {
+    throw new Error("Unable to join the room. Please try again.");
+  }
+
+  const slotRef = ref(rtdb, `${ROOMS_PATH}/${roomKey}/players/${slot}`);
 
   let closed = false;
+  let leaving = false; 
   let started = false;
   let activeSessionId = sessionId;
   let latestPlayers = {};
   let roomUnsubscribe = () => {};
   let movesUnsubscribe = () => {};
-  let heartbeatTimer;
+  let connectedUnsubscribe = () => {};
   let membershipRemoved = false;
   let lastSurrenderEventId = null;
 
   const stopListeners = () => {
-    clearInterval(heartbeatTimer);
     roomUnsubscribe();
     movesUnsubscribe();
+    connectedUnsubscribe();
+    
+    onDisconnect(slotRef)
+      .cancel()
+      .catch(() => {});
   };
 
   const reportError = (reason) => {
@@ -136,35 +120,51 @@ export async function connectToRoom(room, callbacks) {
     callbacks.onError?.(asError(reason));
   };
 
+  
+  connectedUnsubscribe = onValue(
+    ref(rtdb, ".info/connected"),
+    (snapshot) => {
+      if (closed || leaving || snapshot.val() !== true) return;
+      onDisconnect(slotRef).remove().catch(reportError);
+    },
+    reportError,
+  );
+
   const subscribeToMoves = (currentSessionId) => {
     movesUnsubscribe();
-    const movesQuery = query(
-      collection(roomRef, "sessions", currentSessionId, "moves"),
-      orderBy("createdAt", "asc"),
-    );
-
-    movesUnsubscribe = onSnapshot(
-      movesQuery,
+    movesUnsubscribe = onChildAdded(
+      sessionMovesRef(currentSessionId),
       (snapshot) => {
-        for (const change of snapshot.docChanges()) {
-          if (change.type !== "added") continue;
-          const move = change.doc.data();
-          if (move.playerId !== playerId) {
-            callbacks.onMove?.(move);
-          }
+        const move = snapshot.val();
+        if (move && move.playerId !== playerId) {
+          callbacks.onMove?.(move);
         }
       },
       reportError,
     );
   };
 
+  async function acknowledgeSurrender(eventId) {
+    let roomEmptied = false;
+    await runTransaction(roomRef, (current) => {
+      if (current === null) return null; 
+      roomEmptied = false;
+      if (current.surrender?.eventId === eventId && !current.players) {
+        roomEmptied = true;
+        return null; 
+      }
+      return; 
+    });
+    if (roomEmptied) await remove(roomMovesRef).catch(() => {});
+  }
+
   subscribeToMoves(sessionId);
-  roomUnsubscribe = onSnapshot(
+  roomUnsubscribe = onValue(
     roomRef,
     (snapshot) => {
-      if (closed) return;
+      if (closed || leaving) return;
 
-      const roomData = snapshot.exists() ? snapshot.data() : {};
+      const roomData = snapshot.val() || {};
       const nextSessionId = roomData.sessionId;
       latestPlayers = roomData.players || {};
 
@@ -186,6 +186,12 @@ export async function connectToRoom(room, callbacks) {
         }
       }
 
+     
+      if (latestPlayers[slot]?.id !== playerId) {
+        reportError(new Error("You were disconnected from the room."));
+        return;
+      }
+
       if (nextSessionId && nextSessionId !== activeSessionId) {
         activeSessionId = nextSessionId;
         started = false;
@@ -195,7 +201,7 @@ export async function connectToRoom(room, callbacks) {
 
       const rivalSlot = PLAYER_SLOTS.find((playerSlot) => playerSlot !== slot);
       const rival = latestPlayers[rivalSlot];
-      const rivalActive = isPlayerActive(rival, Date.now());
+      const rivalActive = Boolean(rival);
       const rivalAvatarId = getWizardAvatarId(
         rival?.avatarId || DEFAULT_WIZARD_AVATAR,
       );
@@ -221,126 +227,107 @@ export async function connectToRoom(room, callbacks) {
     reportError,
   );
 
-  heartbeatTimer = setInterval(() => {
-    if (closed) return;
-
-    const rivalSlot = PLAYER_SLOTS.find((playerSlot) => playerSlot !== slot);
-    const rival = latestPlayers[rivalSlot];
-    if (started && !isPlayerActive(rival, Date.now())) {
-      started = false;
-      callbacks.onWait?.({ reconnecting: false });
-    }
-
-    runTransaction(db, async (transaction) => {
-      const snapshot = await transaction.get(roomRef);
-      if (!snapshot.exists() || snapshot.data().players?.[slot]?.id !== playerId) {
-        return false;
-      }
-
-      transaction.update(roomRef, {
-        [`players.${slot}.lastSeen`]: Date.now(),
-      });
-      return true;
-    })
-      .then((stillMember) => {
-        if (!stillMember) clearInterval(heartbeatTimer);
-      })
-      .catch(reportError);
-  }, HEARTBEAT_INTERVAL_MS);
-
   const send = async (move) => {
     if (closed) throw new Error("You are no longer connected to this room.");
     if (!["play", "end", "rematch"].includes(move?.type)) {
       throw new Error("Unsupported PvP move.");
     }
 
-    await addDoc(collection(roomRef, "sessions", activeSessionId, "moves"), {
+    await push(sessionMovesRef(activeSessionId), {
       type: move.type,
       ...(move.id ? { id: move.id } : {}),
       playerId,
-      createdAt: Date.now(),
+      createdAt: serverTimestamp(),
     });
   };
 
-  const leave = async () => {
-    if (!closed) {
-      closed = true;
-      stopListeners();
+const leave = async () => {
+  leaving = true;
+
+  if (!closed) {
+    closed = true;
+    stopListeners();
+  }
+
+  if (membershipRemoved) return;
+  membershipRemoved = true;
+
+  let shouldClearMoves = false;
+
+  await runTransaction(roomRef, (current) => {
+    if (!current) return null;
+
+    const players = { ...(current.players || {}) };
+
+    
+    if (players[slot]?.id !== playerId) return;
+
+    delete players[slot];
+
+   
+    shouldClearMoves = true;
+
+    if (Object.keys(players).length === 0) {
+      return null;
     }
-    if (membershipRemoved) return;
-    membershipRemoved = true;
 
-    await runTransaction(db, async (transaction) => {
-      const snapshot = await transaction.get(roomRef);
-      if (!snapshot.exists()) return;
+    return {
+      sessionId: createId(),
+      players,
+      paired: false,
+      updatedAt: serverTimestamp(),
+    };
+  });
 
-      const roomData = snapshot.data();
-      const players = { ...(roomData.players || {}) };
-      if (players[slot]?.id !== playerId) return;
-
-      delete players[slot];
-      if (Object.keys(players).length === 0) {
-        transaction.delete(roomRef);
-      } else {
-        transaction.set(roomRef, {
-          sessionId: createId(),
-          players,
-          paired: false,
-          updatedAt: serverTimestamp(),
-        });
-      }
-    });
-  };
-
-  async function acknowledgeSurrender(eventId) {
-    await runTransaction(db, async (transaction) => {
-      const snapshot = await transaction.get(roomRef);
-      if (!snapshot.exists()) return;
-
-      const roomData = snapshot.data();
-      if (
-        roomData.surrender?.eventId === eventId &&
-        Object.keys(roomData.players || {}).length === 0
-      ) {
-        transaction.delete(roomRef);
-      }
+  if (shouldClearMoves) {
+    await remove(roomMovesRef).catch((error) => {
+      console.error("Unable to clear PvP moves:", error);
     });
   }
+};
 
   const surrender = async () => {
     if (closed) throw new Error("You are no longer connected to this room.");
 
+    leaving = true;
     const eventId = createId();
     const surrenderedSessionId = activeSessionId;
-    await runTransaction(db, async (transaction) => {
-      const snapshot = await transaction.get(roomRef);
-      if (!snapshot.exists()) {
-        throw new Error("The battle room is no longer available.");
-      }
+    let roomSeen = false;
+    let failure = null;
 
-      const roomData = snapshot.data();
-      if (roomData.players?.[slot]?.id !== playerId) {
-        throw new Error("You are no longer a member of this battle room.");
-      }
-
-      transaction.set(roomRef, {
-        sessionId: createId(),
-        players: {},
-        paired: false,
-        surrender: {
-          eventId,
-          sessionId: surrenderedSessionId,
-          playerId,
-          username,
-        },
-        updatedAt: serverTimestamp(),
+    try {
+      await runTransaction(roomRef, (current) => {
+        if (current === null) return null; 
+        roomSeen = true;
+        failure = null;
+        if (current.players?.[slot]?.id !== playerId) {
+          failure = "You are no longer a member of this battle room.";
+          return; 
+        }
+     
+        return {
+          sessionId: createId(),
+          paired: false,
+          surrender: {
+            eventId,
+            sessionId: surrenderedSessionId,
+            playerId,
+            username,
+          },
+          updatedAt: serverTimestamp(),
+        };
       });
-    });
+      if (!roomSeen) throw new Error("The battle room is no longer available.");
+      if (failure) throw new Error(failure);
+    } catch (error) {
+      leaving = false;
+      throw error;
+    }
 
     closed = true;
     stopListeners();
     try {
-      await clearSessionMoves(roomRef, surrenderedSessionId);
+      await remove(sessionMovesRef(surrenderedSessionId));
       return true;
     } catch (error) {
       console.error("Unable to clear surrendered PvP battle data:", error);
