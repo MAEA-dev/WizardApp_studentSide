@@ -16,6 +16,7 @@ import {
   getWizardAvatar,
   getWizardAvatarId,
 } from "../../constants/wizardAvatars";
+import { recordBattleResult } from "../../services/battleStatsService";
 import { getStudentFromFirebase } from "../../services/studentDataService";
 import SpriteSheet from "../shared/SpriteSheet";
 import { connectToRoom } from "./firebaseRelay";
@@ -97,6 +98,8 @@ const PER_PAGE = 3;
 const other = (w) => (w === "me" ? "opp" : "me");
 const manaFor = (turns) => Math.min(6, 2 + turns);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const createBattleId = () =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
 const fresh = (iGoFirst) => ({
   me: { hp: MAX_HP, sh: 0, mana: iGoFirst ? 3 : 0 },
@@ -436,6 +439,33 @@ export default function App() {
   const joining = useRef(false);
   const surrendering = useRef(false);
   const joinAttempt = useRef(0);
+  const battleIdRef = useRef(createBattleId());
+  const recordedBattleIdRef = useRef(null);
+
+  const recordPvpResult = useCallback((result, enemy = opponentUsername) => {
+    const battleId = battleIdRef.current;
+    if (recordedBattleIdRef.current === battleId) return;
+
+    recordedBattleIdRef.current = battleId;
+    recordBattleResult({
+      result,
+      enemy,
+      battleType: "pvp",
+      battleId,
+    }).catch((error) => {
+      console.error("Record PvP battle result error:", error);
+      Alert.alert(
+        "Battle result not saved",
+        error?.message || "Your PvP result could not be saved."
+      );
+    });
+  }, [opponentUsername]);
+
+  useEffect(() => {
+    if (phase === "duel" && (s.me.hp <= 0 || s.opp.hp <= 0)) {
+      recordPvpResult(s.me.hp > 0 ? "won" : "lost");
+    }
+  }, [phase, s.me.hp, s.opp.hp, recordPvpResult]);
 
   const send = (move) => {
     relay.current?.send(move).catch((error) => {
@@ -467,6 +497,9 @@ export default function App() {
     surrendering.current = true;
     try {
       const cleanupComplete = await currentRelay.surrender();
+      if (phase === "duel") {
+        recordPvpResult("lost");
+      }
       if (relay.current === currentRelay) relay.current = null;
       joinAttempt.current += 1;
       joining.current = false;
@@ -485,7 +518,7 @@ export default function App() {
     } finally {
       surrendering.current = false;
     }
-  }, []);
+  }, [phase, recordPvpResult]);
 
   useEffect(() => {
     if (phase !== "duel") return undefined;
@@ -527,6 +560,7 @@ export default function App() {
         onOpponentAvatar: setOpponentAvatarId,
         onOpponentUsername: setOpponentUsername,
         onStart: ({ first, avatarId, username: rivalUsername }) => {
+          battleIdRef.current = createBattleId();
           setOpponentAvatarId(getWizardAvatarId(avatarId));
           setOpponentUsername(rivalUsername || "Opponent");
           dispatch({ t: "reset", first });
@@ -542,6 +576,7 @@ export default function App() {
           );
         },
         onSurrender: ({ username: rivalUsername, acknowledge }) => {
+          recordPvpResult("won", rivalUsername || "Opponent");
           relay.current = null;
           dispatch({ t: "reset", first: true });
           setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
@@ -559,7 +594,10 @@ export default function App() {
             dispatch({ t: "play", who: "opp", id: move.id });
           else if (move.type === "end") dispatch({ t: "end", who: "opp" });
           else if (move.type === "rematch")
+          {
+            battleIdRef.current = createBattleId();
             dispatch({ t: "reset", first: true });
+          }
         },
         onError: (error) => {
           console.error("Firebase PvP relay error:", error);
@@ -621,6 +659,7 @@ export default function App() {
             opponentAvatarId={opponentAvatarId}
             opponentUsername={opponentUsername}
             rematch={() => {
+              battleIdRef.current = createBattleId();
               dispatch({ t: "reset", first: false });
               send({ type: "rematch" });
             }}

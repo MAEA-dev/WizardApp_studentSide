@@ -24,10 +24,9 @@ export default function HomeMenuModal({
     onStudentUpdated,
   });
   const {
-    wins,
-    losses,
-    totalBattles,
-    winRate,
+    overall,
+    pve,
+    pvp,
     history,
     loading,
     error,
@@ -137,31 +136,22 @@ export default function HomeMenuModal({
       }
 
       if (section.id === "win-rate") {
+        const categories = [
+          ["Overall", overall],
+          ["PvE", pve],
+          ["PvP", pvp],
+        ];
+
         return {
           ...section,
-          items:
-            totalBattles === 0
-              ? []
-              : [
-                  {
-                    id: "wins",
-                    title: `${wins} Wins`,
-                    description: "Total battles won.",
-                    status: String(wins),
-                  },
-                  {
-                    id: "losses",
-                    title: `${losses} Losses`,
-                    description: "Total battles lost.",
-                    status: String(losses),
-                  },
-                  {
-                    id: "rate",
-                    title: `${winRate}% Win Rate`,
-                    description: "Current battle performance.",
-                    status: `${winRate}%`,
-                  },
-                ],
+          items: categories
+            .filter(([, stats]) => stats.totalBattles > 0)
+            .map(([label, stats]) => ({
+              id: label.toLowerCase(),
+              title: label,
+              description: `${stats.wins} wins · ${stats.losses} losses`,
+              status: `${stats.winRate}%`,
+            })),
         };
       }
 
@@ -172,13 +162,12 @@ export default function HomeMenuModal({
     history,
     inventory.cards,
     inventory.skins,
-    losses,
+    overall,
+    pve,
+    pvp,
     purchasingItemId,
     student,
-    totalBattles,
     type,
-    winRate,
-    wins,
   ]);
 
   if (!content) return null;

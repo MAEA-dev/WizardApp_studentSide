@@ -9,11 +9,17 @@ import {
   watchCurrentUserUid,
 } from "../services/firebaseAuth";
 
-const EMPTY_STATS = {
+const EMPTY_CATEGORY_STATS = {
   wins: 0,
   losses: 0,
   totalBattles: 0,
   winRate: 0,
+};
+
+const EMPTY_STATS = {
+  overall: EMPTY_CATEGORY_STATS,
+  pve: EMPTY_CATEGORY_STATS,
+  pvp: EMPTY_CATEGORY_STATS,
 };
 
 export const useBattleStats = ({ enabled = true } = {}) => {
@@ -94,6 +100,9 @@ export const useBattleStats = ({ enabled = true } = {}) => {
   }, [loadBattleStats]);
 
   return {
+    overallStats: stats.overall,
+    pveStats: stats.pve,
+    pvpStats: stats.pvp,
     ...stats,
     history,
     loading,

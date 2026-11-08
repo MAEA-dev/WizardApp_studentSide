@@ -1,24 +1,24 @@
 import {
-  ScrollView,
-  Alert,
-  View,
-  StyleSheet,
   ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
   Text,
+  View,
 } from "react-native";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useBattleSystem } from "../../hooks/useBattleSystem";
 import { useHomeData } from "../../hooks/useHomeData";
 import { getBattleQuestionsByGrade } from "../../services/battleService";
 
+import WizardMessage from "../shared/wizardModal";
+import AnswerChoices from "./AnswerChoices";
+import BattleFooter from "./BattleFooter";
 import BattleStage from "./BattleStage";
 import MessageBox from "./MessageBox";
 import QuestionCard from "./QuestionCard";
-import AnswerChoices from "./AnswerChoices";
-import BattleFooter from "./BattleFooter";
-import WizardMessage from "../shared/wizardModal";
 
 const getStudentGradeLevel = (student) => {
   return (
@@ -140,7 +140,7 @@ const BattleScreen = ({ onExitBattle }) => {
       attack: wizardStats.attack,
     },
     monster: {
-      maxHp: 1000,
+      maxHp: 100,
       attack: 50,
     },
     battleType: "dungeon",
