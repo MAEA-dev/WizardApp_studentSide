@@ -98,13 +98,16 @@ export const st = StyleSheet.create({
     fontSize: 42,
   },
 
-  top: {
-    flex: 4,
-    alignItems: "center",
-    paddingTop: 10,
-    paddingHorizontal: 40,
-    backgroundColor: C.dusk,
-  },
+top: {
+  height: 280,
+  width: "100%",
+  flexGrow: 0,
+  flexShrink: 0,
+  alignItems: "center",
+  paddingTop: 10,
+  paddingHorizontal: 40,
+  overflow: "hidden",
+},
 
   mid: {
     alignItems: "center",
@@ -124,6 +127,7 @@ export const st = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 22,
     borderRadius: 20,
+  
   },
 
   mine: {

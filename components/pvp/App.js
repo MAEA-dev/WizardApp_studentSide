@@ -29,6 +29,11 @@ export default function App() {
     status,
     opponentAvatarId,
     opponentUsername,
+
+  
+    myStats,
+    opponentStats,
+
     s,
     dispatch,
     join,
@@ -86,6 +91,10 @@ export default function App() {
             opponentAvatarId={opponentAvatarId}
             opponentUsername={opponentUsername}
             rematch={rematch}
+
+    
+            myStats={myStats}
+            opponentStats={opponentStats}
           />
         )}
       </SafeAreaView>

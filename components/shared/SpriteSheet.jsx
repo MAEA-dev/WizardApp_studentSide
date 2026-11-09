@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { Image, View, StyleSheet } from "react-native";
 
@@ -8,44 +9,52 @@ export default function SpriteSheet({
   frameCount = 6,
   fps = 6,
   scale = 1,
+  loop = true,
+  onComplete,
 }) {
   const [frameIndex, setFrameIndex] = useState(0);
   const timeoutRef = useRef(null);
   const currentFrameRef = useRef(0);
+  const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    let completed = false;
     const frameSpeed = 1000 / fps;
-
-    const clearCurrentTimeout = () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-
-    const animate = () => {
-      currentFrameRef.current += 1;
-
-      if (currentFrameRef.current >= frameCount) {
-        currentFrameRef.current = 0;
-      }
-
-      setFrameIndex(currentFrameRef.current);
-
-      timeoutRef.current = setTimeout(animate, frameSpeed);
-    };
-
-    clearCurrentTimeout();
 
     currentFrameRef.current = 0;
     setFrameIndex(0);
 
+    const animate = () => {
+      const nextFrame = currentFrameRef.current + 1;
+
+      if (nextFrame >= frameCount) {
+        if (!loop) {
+          completed = true;
+          onCompleteRef.current?.();
+          return;
+        }
+
+        currentFrameRef.current = 0;
+      } else {
+        currentFrameRef.current = nextFrame;
+      }
+
+      setFrameIndex(currentFrameRef.current);
+      timeoutRef.current = setTimeout(animate, frameSpeed);
+    };
+
     timeoutRef.current = setTimeout(animate, frameSpeed);
 
     return () => {
-      clearCurrentTimeout();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
-  }, [frameCount, fps]);
+  }, [source, frameCount, fps, loop]);
 
   return (
     <View

@@ -1,5 +1,7 @@
 /* ---------- game data ---------- */
-export const MAX_HP = 20;
+
+export const MAX_HP = 100;
+
 export const CARDS = [
   {
     id: "bolt",
@@ -8,34 +10,34 @@ export const CARDS = [
     dmg: 3,
     icon: "⚡",
     color: "#f6c945",
-    text: "Retribution. Deals 3 damage.",
+    text: "Retribution. Deals 3 base damage.",
   },
   {
     id: "ward",
     name: "Ward",
     cost: 2,
-    sh: 5,
+    sh: 20,
     icon: "🛡️",
     color: "#4aa3ff",
-    text: "Block. Block. Block - Absorbs 5 damage.",
-  },
-  {
+    text: "Absorbs 20 damage.",
+    },
+    {
     id: "fire",
     name: "Fire Tempest",
     cost: 2,
     dmg: 6,
     icon: "🔥",
     color: "#ff7a3d",
-    text: "Incinerate. Deals 6 damage.",
+    text: "Incinerate. Deals 6 base damage.",
   },
   {
     id: "heal",
     name: "Mend",
     cost: 2,
-    heal: 5,
+    heal: 30,
     icon: "💚",
     color: "#4ade80",
-    text: "I wanna heal, I wanna feel, what I thought was never real. Heals 5.",
+    text: "Heals 30 HP.",
   },
   {
     id: "drain",
@@ -45,7 +47,7 @@ export const CARDS = [
     heal: 2,
     icon: "🌙",
     color: "#b57bff",
-    text: "Death by snu snu. Deals 4 damage and heals 2.",
+    text: "Deals 4 base damage and heals 2 HP.",
   },
   {
     id: "meteor",
@@ -54,9 +56,12 @@ export const CARDS = [
     dmg: 10,
     icon: "☄️",
     color: "#ff4d4d",
-    text: "Dinosaurs be damned. Deals 10 damage.",
+    text: "Dinosaurs be damned. Deals 10 base damage.",
   },
 ];
+
 export const PER_PAGE = 3;
+
 export const other = (w) => (w === "me" ? "opp" : "me");
+
 export const manaFor = (turns) => Math.min(6, 2 + turns);
