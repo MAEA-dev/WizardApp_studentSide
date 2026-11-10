@@ -1,6 +1,7 @@
 import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "./firebaseConfig";
+import { updateLoginStreak } from "./dailyStreakService";
 
 import {
   getStudentCache,
@@ -71,7 +72,17 @@ export const syncStudentFromFirebase = async () => {
 };
 
 export const prepareStudentAfterLogin = async () => {
-  return syncStudentFromFirebase();
+  const student = await syncStudentFromFirebase();
+
+  if (!student) return student;
+
+  try {
+    const streakData = await updateLoginStreak();
+    return cacheAndReturnStudent({ ...student, ...streakData });
+  } catch (error) {
+    console.warn("Could not update daily login streak:", error);
+    return student;
+  }
 };
 
 export const clearStudentLocalData = async () => {

@@ -6,6 +6,11 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "./firebaseConfig";
+import {
+  calculateDailyStreak,
+  getTodayKey,
+  getYesterdayKey,
+} from "./dailyStreakService";
 
 import {
   saveStudentCache,
@@ -64,26 +69,7 @@ const cleanAnswerDetails = (answerDetails = []) => {
   });
 };
 
-export const getTodayKey = () => {
-  const date = new Date();
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
-const getYesterdayKey = () => {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
+export { getTodayKey };
 
 const calculateLevelProgress = ({
   currentXp,
@@ -113,21 +99,6 @@ const calculateLevelProgress = ({
     leveledUp: levelsGained > 0,
     statPointsGained: levelsGained * STAT_POINTS_PER_LEVEL,
   };
-};
-
-const calculateStreak = ({ currentStreak, lastLessonRewardDate }) => {
-  const todayKey = getTodayKey();
-  const yesterdayKey = getYesterdayKey();
-
-  if (lastLessonRewardDate === todayKey) {
-    return getNumber(currentStreak);
-  }
-
-  if (lastLessonRewardDate === yesterdayKey) {
-    return getNumber(currentStreak) + 1;
-  }
-
-  return 1;
 };
 
 const getLessonSubjectId = (lesson) => {
@@ -268,11 +239,18 @@ export const completeLessonAndReward = async ({
     const nextTotalLessonsTaken = getNumber(studentData.totalLessonsTaken) + 1;
 
     const nextStreak = isFirstLessonToday
-      ? calculateStreak({
+      ? calculateDailyStreak({
           currentStreak: studentData.streak,
-          lastLessonRewardDate: studentData.lastLessonRewardDate,
+          lastStreakDate:
+            studentData.lastStreakDate || studentData.lastLessonRewardDate,
+          todayKey,
+          yesterdayKey: getYesterdayKey(),
         })
       : getNumber(studentData.streak);
+
+    const nextLastStreakDate = isFirstLessonToday
+      ? todayKey
+      : studentData.lastStreakDate || null;
 
     const nextLastLessonRewardDate = isFirstLessonToday
       ? todayKey
@@ -306,6 +284,7 @@ export const completeLessonAndReward = async ({
       statPoints: nextStatPoints,
 
       streak: nextStreak,
+      lastStreakDate: nextLastStreakDate,
       lastLessonRewardDate: nextLastLessonRewardDate,
       lastLessonRewardLessonId: nextLastLessonRewardLessonId,
 
@@ -325,6 +304,7 @@ export const completeLessonAndReward = async ({
       statPoints: nextStatPoints,
 
       streak: nextStreak,
+      lastStreakDate: nextLastStreakDate,
       lastLessonRewardDate: nextLastLessonRewardDate,
       lastLessonRewardLessonId: nextLastLessonRewardLessonId,
 

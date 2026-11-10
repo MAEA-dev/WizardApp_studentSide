@@ -53,6 +53,8 @@ export const useBattleSystem = ({
   timeLimit = DEFAULT_TIME_LIMIT,
   battleType = "dungeon",
   enemy = "Monster",
+  wizardAttackEffect = "waterBlast",
+  monsterAttackEffect = "poisonBlast",
 }) => {
   const nextQuestionTimeoutRef = useRef(null);
   const skillEffectTimeoutRef = useRef(null);
@@ -166,7 +168,7 @@ export const useBattleSystem = ({
     setSkillEffect(null);
 
     showSkillEffectAfterDelay({
-      effectName: "waterBlast",
+      effectName: wizardAttackEffect,
       target: "right",
       delay: WIZARD_CAST_DELAY,
     });
@@ -192,7 +194,7 @@ export const useBattleSystem = ({
 
       return nextHp;
     });
-  }, [wizardAttack, scheduleNextQuestion, showSkillEffectAfterDelay]);
+  }, [wizardAttack, wizardAttackEffect, scheduleNextQuestion, showSkillEffectAfterDelay]);
 
   const damageWizard = useCallback(
     (message) => {
@@ -201,7 +203,7 @@ export const useBattleSystem = ({
       setSkillEffect(null);
 
       showSkillEffectAfterDelay({
-        effectName: "poisonBlast",
+        effectName: monsterAttackEffect,
         target: "left",
         delay: MONSTER_CAST_DELAY,
       });
@@ -228,7 +230,12 @@ export const useBattleSystem = ({
         return nextHp;
       });
     },
-    [monsterAttack, scheduleNextQuestion, showSkillEffectAfterDelay]
+    [
+      monsterAttack,
+      monsterAttackEffect,
+      scheduleNextQuestion,
+      showSkillEffectAfterDelay,
+    ]
   );
 
   const handleAnswer = useCallback(

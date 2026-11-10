@@ -1,4 +1,6 @@
 
+import { useEffect, useRef, useState } from "react";
+
 import {
   Pressable,
   Text,
@@ -12,7 +14,10 @@ import { Wizard } from "./Wizard";
 import { Stats } from "./PlayerStats";
 import { Book } from "./Spellbook";
 import { DamageFlash } from "../Animation/DamageFlash";
-import { effectsByCardId } from "../Animation/effects";
+import {
+  effectsByCardId,
+} from "../Animation/effects";
+import { skillEffects } from "../../../data/skillEffects";
 
 export function Duel({
   s,
@@ -26,16 +31,75 @@ export function Duel({
 }) {
   const { height, width } = useWindowDimensions();
 
+  const [hideOpponent, setHideOpponent] = useState(false);
+
   const lastEffect = s.lastEffect;
 
-  const opponentEffect =
-    lastEffect?.target === "opp" &&
-    effectsByCardId[lastEffect.cardId]
-      ? {
-          ...effectsByCardId[lastEffect.cardId],
-          key: lastEffect.key,
-        }
-      : null;
+  const [damageFlashHits, setDamageFlashHits] = useState(0);
+  const [flashType, setFlashType] = useState("damage");
+  const [spellFlashKey, setSpellFlashKey] = useState(null);
+
+  const [bookShakeHits, setBookShakeHits] = useState(0);
+
+  const previousEffectKey = useRef(null);
+  const pendingPlayerDamage = useRef(false);
+
+  const nonDamageCards = ["heal", "shield", "ward"];
+
+  const isDamageCard =
+    !!lastEffect &&
+    !nonDamageCards.includes(lastEffect.cardId);
+
+
+  useEffect(() => {
+  if (s.opp.hp > 0) {
+    setHideOpponent(false);
+  }
+}, [s.opp.hp]);  
+
+  const opponentEffect = (() => {
+    if (
+      lastEffect?.who === "me" &&
+      lastEffect?.target === "opp" &&
+      isDamageCard
+    ) {
+      const effect = effectsByCardId[lastEffect.cardId];
+
+      return effect
+        ? {
+            ...effect,
+            key: lastEffect.key,
+            cardId: lastEffect.cardId,
+          }
+        : null;
+    }
+
+    if (
+      lastEffect?.who === "opp" &&
+      lastEffect?.target === "opp"
+    ) {
+      const effectKey =
+        lastEffect.cardId === "ward"
+          ? "shield"
+          : lastEffect.cardId;
+
+      if (!["heal", "shield"].includes(effectKey)) {
+        return null;
+      }
+
+      const effect = skillEffects[effectKey];
+
+      return effect
+        ? {
+            ...effect,
+            key: lastEffect.key,
+            cardId: lastEffect.cardId,
+          }
+        : null;
+    }
+
+    return null;
+  })();
 
   const over = s.me.hp <= 0 || s.opp.hp <= 0;
   const won = s.opp.hp <= 0;
@@ -50,29 +114,80 @@ export function Duel({
     Math.min(width * 0.07, 40)
   );
 
-  const isEnemyAttack =
+
+  const isOpponentDamageAttack =
     lastEffect?.who === "opp" &&
     lastEffect?.target === "me" &&
-    lastEffect?.cardId !== "heal" &&
-    lastEffect?.cardId !== "ward";
+    isDamageCard;
+
+  const opponentAnimation = isOpponentDamageAttack
+    ? "attack"
+    : "idle";
+
+  const opponentAnimationKey = isOpponentDamageAttack
+    ? lastEffect.key
+    : 0;
 
   const isEnemyMeteor =
-    isEnemyAttack &&
+    isOpponentDamageAttack &&
     lastEffect?.cardId === "meteor";
 
   const isHealing =
     lastEffect?.who === "me" &&
     lastEffect?.cardId === "heal";
 
-  const flashType = isHealing
-    ? "heal"
-    : isEnemyMeteor
-    ? "critical"
-    : "damage";
+
+  useEffect(() => {
+    if (lastEffect?.key == null) return;
+
+    if (previousEffectKey.current === lastEffect.key) {
+      return;
+    }
+
+    previousEffectKey.current = lastEffect.key;
+
+    setSpellFlashKey(null);
+    pendingPlayerDamage.current = false;
+
+    if (isHealing) {
+      setFlashType("heal");
+      setSpellFlashKey(lastEffect.key);
+    }
+
+    if (isOpponentDamageAttack) {
+      pendingPlayerDamage.current = true;
+    }
+  }, [
+    lastEffect?.key,
+    lastEffect?.who,
+    lastEffect?.cardId,
+    isHealing,
+    isOpponentDamageAttack,
+  ]);
+
+
+const handleOpponentAttackComplete = () => {
+  if (pendingPlayerDamage.current) {
+    pendingPlayerDamage.current = false;
+
+    setFlashType(isEnemyMeteor ? "critical" : "damage");
+    setSpellFlashKey(null);
+
+    setBookShakeHits((value) => value + 1);
+    setDamageFlashHits((value) => value + 1);
+  }
+
+  if (s.opp.hp <= 0) {
+    setHideOpponent(true);
+  }
+};
+
+
+
 
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
-      {/* Opponent section */}
+      {/* Opponent area */}
       <ImageBackground
         source={require("../../../assets/images/duelBG.png")}
         style={{
@@ -100,15 +215,20 @@ export function Duel({
           />
         </View>
 
+        {!hideOpponent && (
         <Wizard
           avatarId={opponentAvatarId}
           hits={s.hits.opp}
           flip
           effect={opponentEffect}
-        />
+          animation={opponentAnimation}
+          animationKey={opponentAnimationKey}
+           onAnimationComplete={handleOpponentAttackComplete}
+          />
+        )}
       </ImageBackground>
 
-      {/* Middle section */}
+      {/* Middle area */}
       <View
         style={[
           st.mid,
@@ -145,7 +265,7 @@ export function Duel({
         </Pressable>
       </View>
 
-      {/* Player stats */}
+      {/* Your HP and stats */}
       <View
         style={[
           st.mine,
@@ -165,26 +285,24 @@ export function Duel({
         />
       </View>
 
-      {/* Spellbook */}
+      {/* Spellbook handles its own shake */}
       <Book
         s={s}
+        shakeHits={bookShakeHits}
         onPlay={(id) => {
           dispatch({ t: "play", who: "me", id });
           send({ type: "play", id });
         }}
       />
 
-      {/* Victory / Defeat */}
+      {/* End game overlay */}
       {over && (
         <View style={st.overlay}>
           <Text style={st.logo}>
             {won ? "Victory!" : "Defeated"}
           </Text>
 
-          <Pressable
-            style={st.btn}
-            onPress={rematch}
-          >
+          <Pressable style={st.btn} onPress={rematch}>
             <Text style={st.btnTxt}>Rematch</Text>
           </Pressable>
 
@@ -197,10 +315,10 @@ export function Duel({
         </View>
       )}
 
-      {/* Screen damage / healing flash */}
+      {/* Screen damage/heal flash */}
       <DamageFlash
-        hits={s.hits.me}
-        spellKey={isHealing ? lastEffect?.key : null}
+        hits={damageFlashHits}
+        spellKey={spellFlashKey}
         type={flashType}
       />
     </View>

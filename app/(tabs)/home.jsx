@@ -163,7 +163,10 @@ const Home = () => {
 
             <StatsRow stats={stats} layout={layout} />
 
-            <WizardAvatar scale={layout.wizardScale} />
+            <WizardAvatar
+              avatarId={student?.equippedSkin}
+                scale={layout.wizardScale}
+              />
 
             <DailyTaskCard
               task={dailyTask}

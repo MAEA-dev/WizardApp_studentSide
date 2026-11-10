@@ -8,8 +8,8 @@ export const IMAGE_ASSETS = [
     require("../assets/images/skillEffect/blast.png"),
     require("../assets/images/skillEffect/waterBlast.png"),
     require("../assets/images/skillEffect/poisonExplosion.png"),
-    require("../assets/images/monster/attack.png"),
-    require("../assets/images/monster/die.png"),
+    require("../assets/images/monsters/plantMonster/attack.png"),
+    require("../assets/images/monsters/plantMonster/die.png"),
     require("../assets/images/waterMage/hurt.png"),
-    require("../assets/images/monster/hurt.png")
+    require("../assets/images/monsters/plantMonster/hurt.png")
 ];

@@ -13,15 +13,7 @@ export const homeMenuModalData = {
         items: [],
         emptyMessage: "No skins are available right now.",
       },
-      {
-        id: "card-shop",
-        tabTitle: "Cards",
-        title: "Card Shop",
-        icon: "albums",
-        type: "shop",
-        items: [],
-        emptyMessage: "No cards are available right now.",
-      },
+     
     ],
   },
 
@@ -38,15 +30,6 @@ export const homeMenuModalData = {
         type: "inventory",
         items: [],
         emptyMessage: "You don't own any skins yet. Visit the Shop to find one.",
-      },
-      {
-        id: "card-inventory",
-        tabTitle: "Cards",
-        title: "Card Inventory",
-        icon: "albums",
-        type: "inventory",
-        items: [],
-        emptyMessage: "You don't own any cards yet. Visit the Shop to find one.",
       },
     ],
   },

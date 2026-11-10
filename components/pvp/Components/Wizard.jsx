@@ -4,68 +4,137 @@ import { View, StyleSheet } from "react-native";
 
 import { HitShake } from "../Animation/HitShake";
 import SpriteSheet from "../../shared/SpriteSheet";
-import { getWizardAvatar } from "../../../constants/wizardAvatars";
 
-export function Wizard({ avatarId, hits, flip, effect }) {
-  const avatar = getWizardAvatar(avatarId);
+import {
+  DEFAULT_WIZARD_AVATAR,
+  getWizardAnimation,
+} from "../../../constants/wizardAvatars";
 
+export function Wizard({
+  avatarId = DEFAULT_WIZARD_AVATAR,
+  hits,
+  flip,
+  effect,
+  animation = "idle",
+  animationKey = 0,
+  onAnimationComplete,
+  onEffectComplete,
+}) {
+  const [currentAnimation, setCurrentAnimation] = useState("idle");
   const [activeEffect, setActiveEffect] = useState(null);
   const [shakeTrigger, setShakeTrigger] = useState(0);
 
   const previousHits = useRef(hits);
   const pendingShake = useRef(false);
   const effectActive = useRef(false);
+  const nonDamageEffect = useRef(false);
 
-  // Detect incoming damage
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+  const onEffectCompleteRef = useRef(onEffectComplete);
+
+  const selectedAnimation = getWizardAnimation(
+    avatarId,
+    currentAnimation
+  );
+
+  useEffect(() => {
+    onAnimationCompleteRef.current = onAnimationComplete;
+  }, [onAnimationComplete]);
+
+  useEffect(() => {
+    onEffectCompleteRef.current = onEffectComplete;
+  }, [onEffectComplete]);
+
+  useEffect(() => {
+    if (!animationKey || animation !== "attack") return;
+    setCurrentAnimation("attack");
+  }, [animationKey, animation]);
+
+  useEffect(() => {
+    if (!effect || effect.key == null) return;
+
+    effectActive.current = true;
+
+    nonDamageEffect.current = [
+      "heal",
+      "shield",
+      "ward",
+    ].includes(effect.cardId);
+
+    pendingShake.current = false;
+
+    setActiveEffect(effect);
+  }, [effect?.key]);
+
   useEffect(() => {
     if (hits > previousHits.current) {
       previousHits.current = hits;
 
+      if (nonDamageEffect.current) return;
+
       if (effectActive.current) {
-        // Wait for the spell animation to finish
         pendingShake.current = true;
-      } else {
-        // No active spell effect, shake immediately
+      } else if (currentAnimation !== "attack") {
         setShakeTrigger((value) => value + 1);
       }
     } else {
       previousHits.current = hits;
     }
-  }, [hits]);
+  }, [hits, currentAnimation]);
 
-  // Start spell effect
-  useEffect(() => {
-    if (effect?.key == null) return;
+  const handleAnimationComplete = () => {
+    setCurrentAnimation("idle");
+    onAnimationCompleteRef.current?.();
+  };
 
-    effectActive.current = true;
-    setActiveEffect(effect);
-  }, [effect?.key]);
+  const handleShakeComplete = () => {};
 
-  // Run shake after spell effect finishes
   const handleEffectComplete = () => {
     effectActive.current = false;
+    nonDamageEffect.current = false;
     setActiveEffect(null);
 
     if (pendingShake.current) {
       pendingShake.current = false;
       setShakeTrigger((value) => value + 1);
     }
+
+    onEffectCompleteRef.current?.();
   };
 
   return (
     <View style={styles.wizard}>
-      <HitShake hits={shakeTrigger} style={styles.shakeArea}>
+      <HitShake
+        hits={shakeTrigger}
+        style={styles.shakeArea}
+        onComplete={handleShakeComplete}
+      >
         <View style={styles.container}>
           <View
             style={[
               styles.sprite,
-              { transform: [{ scaleX: flip ? -1 : 1 }] },
+              {
+                transform: [
+                  { scaleX: flip ? -1 : 1 },
+                ],
+              },
             ]}
           >
             <SpriteSheet
-              source={avatar.source}
-              frameCount={avatar.frameCount}
+              key={`${avatarId}-${currentAnimation}-${animationKey}`}
+              source={selectedAnimation.source}
+              frameCount={selectedAnimation.frameCount}
+              fps={
+                selectedAnimation.fps ||
+                (currentAnimation === "attack" ? 20 : 8)
+              }
               scale={1}
+              loop={currentAnimation === "idle"}
+              onComplete={
+                currentAnimation === "attack"
+                  ? handleAnimationComplete
+                  : undefined
+              }
             />
           </View>
         </View>

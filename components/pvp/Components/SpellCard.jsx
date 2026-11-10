@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
 
 import { C } from "../PvpStyles";
@@ -22,11 +23,37 @@ export function SpellCard({
   const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
 
-  const iconSize = compact ? 25 : 36;
-  const nameSize = compact ? 10 : 13;
-  const descriptionSize = compact ? 8 : 11;
+  const { width, height } = useWindowDimensions();
 
-  // Add the player's Magic Power to offensive spells.
+  // Responsive sizing
+  const iconSize = Math.max(
+    20,
+    Math.min(width * 0.085, compact ? 29 : 38)
+  );
+
+  const nameSize = Math.max(
+    9,
+    Math.min(width * 0.032, compact ? 11 : 14)
+  );
+
+  const descriptionSize = Math.max(
+    7,
+    Math.min(width * 0.027, compact ? 9 : 12)
+  );
+
+  const damageSize = Math.max(
+    8,
+    Math.min(width * 0.028, 11)
+  );
+
+  const totalDamageSize = Math.max(
+    10,
+    Math.min(width * 0.033, 13)
+  );
+
+  const verticalSpacing = height < 700 ? 2 : 5;
+
+  // Magic Power bonus
   const magicPower = Math.max(0, Number(power) || 0);
   const totalDamage = card.dmg
     ? card.dmg + magicPower
@@ -79,7 +106,10 @@ export function SpellCard({
       <Text
         style={[
           styles.cardIcon,
-          { fontSize: iconSize },
+          {
+            fontSize: iconSize,
+            marginTop: verticalSpacing + 5,
+          },
         ]}
       >
         {card.icon}
@@ -89,11 +119,14 @@ export function SpellCard({
       <Text
         style={[
           styles.cardName,
-          { fontSize: nameSize },
+          {
+            fontSize: nameSize,
+            marginTop: verticalSpacing,
+          },
         ]}
         numberOfLines={2}
         adjustsFontSizeToFit
-        minimumFontScale={0.75}
+        minimumFontScale={0.7}
       >
         {card.name}
       </Text>
@@ -102,25 +135,40 @@ export function SpellCard({
       <Text
         style={[
           styles.cardText,
-          { fontSize: descriptionSize },
+          {
+            fontSize: descriptionSize,
+            marginTop: verticalSpacing,
+          },
         ]}
         numberOfLines={3}
         adjustsFontSizeToFit
-        minimumFontScale={0.7}
+        minimumFontScale={0.65}
       >
         {card.text}
       </Text>
 
       {/* Magic Power bonus and final damage */}
       {card.dmg > 0 && (
-        <View style={styles.damageContainer}>
-          <Text style={styles.damageText}>
+        <View
+          style={[
+            styles.damageContainer,
+            { marginTop: verticalSpacing },
+          ]}
+        >
+          <Text
+            style={[
+              styles.damageText,
+              { fontSize: damageSize, color: "#b45309", },
+            ]}
+          >
             ⚔️ {card.dmg}
-            {magicPower > 0 ? ` + ${magicPower}` : ""}
-          </Text>
-
-          <Text style={styles.totalDamage}>
-            {totalDamage} DMG
+            <Text style={[
+              styles.damageText,
+              { fontSize: damageSize , color:"#08ce08"},
+            ]}>
+              {magicPower > 0 ? ` + ${magicPower}` : ""}
+            </Text>
+            
           </Text>
         </View>
       )}
@@ -138,7 +186,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "visible",
+
   },
 
   cost: {
@@ -160,37 +208,31 @@ const styles = StyleSheet.create({
   },
 
   cardIcon: {
-    marginTop: 8,
     textAlign: "center",
   },
 
   cardName: {
     color: C.ink,
     fontWeight: "800",
-    marginTop: 5,
     textAlign: "center",
   },
 
   cardText: {
     color: "#5b4a35",
-    marginTop: 4,
     textAlign: "center",
   },
 
   damageContainer: {
     alignItems: "center",
-    marginTop: 5,
   },
 
   damageText: {
-    color: "#b45309",
-    fontSize: 10,
+    
     fontWeight: "700",
   },
 
   totalDamage: {
     color: "#dc2626",
-    fontSize: 12,
     fontWeight: "900",
     marginTop: 2,
   },

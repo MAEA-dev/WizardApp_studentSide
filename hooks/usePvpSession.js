@@ -68,7 +68,7 @@ export function usePvpSession() {
   const battleIdRef = useRef(createBattleId());
   const recordedBattleIdRef = useRef(null);
 
-  // Record battle result only once per battle.
+
   const recordPvpResult = useCallback(
     (result, enemy = opponentUsername) => {
       const battleId = battleIdRef.current;
@@ -94,7 +94,7 @@ export function usePvpSession() {
     [opponentUsername]
   );
 
-  // Detect battle completion.
+
   useEffect(() => {
     if (
       phase === "duel" &&
@@ -104,7 +104,7 @@ export function usePvpSession() {
     }
   }, [phase, s.me.hp, s.opp.hp, recordPvpResult]);
 
-  // Send moves through Firebase relay.
+
   const send = useCallback((move) => {
     relay.current?.send(move).catch((error) => {
       console.error("Unable to send PvP move:", error);
@@ -113,7 +113,7 @@ export function usePvpSession() {
     });
   }, []);
 
-  // Leave room.
+
   const leave = useCallback(() => {
     joinAttempt.current += 1;
     joining.current = false;
@@ -132,7 +132,7 @@ export function usePvpSession() {
     }
   }, []);
 
-  // Surrender current battle.
+
   const surrender = useCallback(async () => {
     if (surrendering.current) return;
 
@@ -192,7 +192,7 @@ export function usePvpSession() {
     }
   }, [phase, recordPvpResult]);
 
-  // Android hardware back button.
+
   useEffect(() => {
     if (phase !== "duel") return undefined;
 
@@ -207,7 +207,7 @@ export function usePvpSession() {
     return () => subscription.remove();
   }, [phase, surrender]);
 
-  // Join PvP room.
+
   const join = useCallback(async (room) => {
     if (joining.current) return;
 
@@ -239,7 +239,12 @@ export function usePvpSession() {
         throw new Error("Your account is missing a username.");
       }
 
-      // Get the current player's Firebase stats.
+
+      const playerAvatarId = getWizardAvatarId(
+        student.equippedSkin
+      );
+
+   
       const playerStats = normalizeStats({
         power: student.power,
         hp: student.hp,
@@ -249,13 +254,18 @@ export function usePvpSession() {
       myStatsRef.current = playerStats;
 
       const currentRelay = await connectToRoom(room, {
-        avatarId: DEFAULT_WIZARD_AVATAR,
+   
+        avatarId: playerAvatarId,
         username,
 
-        // Send profile stats to Firebase relay.
+
         stats: playerStats,
 
-        onOpponentAvatar: setOpponentAvatarId,
+
+        onOpponentAvatar: (avatarId) => {
+          setOpponentAvatarId(getWizardAvatarId(avatarId));
+        },
+
         onOpponentUsername: setOpponentUsername,
 
         onOpponentStats: (stats) => {
@@ -265,7 +275,7 @@ export function usePvpSession() {
           opponentStatsRef.current = normalized;
         },
 
-        // Start battle using both players' Firebase stats.
+  
         onStart: ({
           first,
           avatarId,
@@ -305,7 +315,7 @@ export function usePvpSession() {
           );
         },
 
-        // Opponent surrendered.
+
         onSurrender: ({
           username: rivalUsername,
           acknowledge,
@@ -347,7 +357,7 @@ export function usePvpSession() {
           });
         },
 
-        // Handle opponent moves.
+
         onMove: (move) => {
           if (move.type === "play") {
             dispatch({
@@ -419,7 +429,7 @@ export function usePvpSession() {
     }
   }, [recordPvpResult]);
 
-  // Local player requests a rematch.
+
   const rematch = useCallback(() => {
     battleIdRef.current = createBattleId();
 

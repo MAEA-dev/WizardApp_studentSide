@@ -4,16 +4,18 @@ import {
   ImageBackground,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 
 import SpriteAnimator from "./SpriteAnimator";
 import SkillEffect from "./skillEffect";
 import {Fonts} from "../../constants/Fonts"
+import {
+  DEFAULT_WIZARD_AVATAR,
+  getWizardAvatar,
+} from "../../constants/wizardAvatars";
 
 import {
-  wizardSprites,
   monsterSprites,
 } from "../../data/battleSprites";
 
@@ -24,6 +26,11 @@ const BattleStage = ({
   monsterHp,
   wizardHpPercent,
   monsterHpPercent,
+  wizardAvatarId = DEFAULT_WIZARD_AVATAR,
+  monsterAnimations,
+  monsterFlipped = false,
+  monsterScale,
+  monsterHeightScale = 1,
 
   wizardAction,
   monsterAction,
@@ -34,10 +41,35 @@ const BattleStage = ({
   skillEffectTarget,
   onSkillEffectFinish,
 }) => {
-  const { width } = useWindowDimensions();
-
-  const fieldWidth = width;
-  const fieldHeight = 190;
+  const equippedAvatar = getWizardAvatar(wizardAvatarId);
+  const wizardAnimations = Object.fromEntries(
+    Object.entries(equippedAvatar.animations).map(([action, animation]) => [
+      action,
+      {
+        ...animation,
+        frameWidth: 128,
+        frameHeight: 128,
+        loop: action === "idle",
+      },
+    ])
+  );
+  const displayedWizardAction =
+    wizardAction === "die"
+      ? "defeat"
+      : wizardAnimations[wizardAction]
+        ? wizardAction
+        : "idle";
+  const displayedMonsterAnimations = {
+    ...monsterSprites,
+    ...Object.fromEntries(
+      Object.entries(monsterAnimations || {}).filter(
+        ([, animation]) => animation?.source
+      )
+    ),
+  };
+  const hasCustomMonsterAnimations = Object.values(
+    monsterAnimations || {}
+  ).some((animation) => animation?.source);
 
   return (
     <ImageBackground
@@ -88,37 +120,37 @@ const BattleStage = ({
         <View style={styles.battleField}>
           <View style={styles.characterBox}>
             <SpriteAnimator
-              animations={wizardSprites}
-              action={wizardAction}
+              animations={wizardAnimations}
+              action={displayedWizardAction}
               width={128}
               height={128}
               scale={0.9}
               fps={7}
               onAnimationFinish={(finishedAction) => {
-                if (finishedAction !== "die") {
+                if (finishedAction !== "defeat") {
                   setWizardAction("idle");
                 }
               }}
             />
+            {skillEffect && skillEffectTarget === "left" && (
+              <SkillEffect
+                visible
+                effect={skillEffect}
+                scale={1.2}
+                onFinish={onSkillEffectFinish}
+              />
+            )}
           </View>
-
-          <SkillEffect
-            visible={!!skillEffect}
-            effect={skillEffect}
-            position={skillEffectTarget}
-            fieldWidth={fieldWidth}
-            fieldHeight={fieldHeight}
-            scale={1.2}
-            onFinish={onSkillEffectFinish}
-          />
 
           <View style={styles.characterBox}>
             <SpriteAnimator
-              animations={monsterSprites}
+              animations={displayedMonsterAnimations}
               action={monsterAction}
               width={96}
               height={96}
-              scale={1.2}
+              scale={monsterScale ?? (hasCustomMonsterAnimations ? 0.9 : 1.2)}
+              heightScale={monsterHeightScale}
+              flipped={monsterFlipped}
               fps={7}
               onAnimationFinish={(finishedAction) => {
                 if (finishedAction !== "die") {
@@ -126,6 +158,14 @@ const BattleStage = ({
                 }
               }}
             />
+            {skillEffect && skillEffectTarget === "right" && (
+              <SkillEffect
+                visible
+                effect={skillEffect}
+                scale={1.2}
+                onFinish={onSkillEffectFinish}
+              />
+            )}
           </View>
         </View>
       </View>
@@ -213,11 +253,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    paddingHorizontal: 25,
+    paddingHorizontal: 10,
     paddingBottom: 14,
   },
 
   characterBox: {
+    position: "relative",
     width: 125,
     height: 125,
     justifyContent: "flex-end",

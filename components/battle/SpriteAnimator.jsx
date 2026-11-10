@@ -19,6 +19,7 @@ const SpriteAnimator = ({
   width = 96,
   height = 96,
   scale = 1,
+  heightScale = 1,
 
   fps = 10,
   loop = true,
@@ -136,7 +137,7 @@ const SpriteAnimator = ({
   }
 
   const scaledWidth = frameWidth * scale;
-  const scaledHeight = frameHeight * scale;
+  const scaledHeight = frameHeight * scale * heightScale;
 
   return (
     <View

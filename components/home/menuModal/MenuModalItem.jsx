@@ -1,3 +1,4 @@
+
 import {
   StyleSheet,
   Text,
@@ -5,18 +6,30 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 import { Fonts } from "../../../constants/Fonts";
 
-export default function MenuModalItem({ item, sectionType, onBuyPress }) {
+export default function MenuModalItem({
+  item,
+  sectionType,
+  onBuyPress,
+  onEquipPress,
+  isEquipping = false
+}) {
   const isShopItem = sectionType === "shop";
+  const isInventoryItem = sectionType === "inventory";
   const hasImage = !!item.image;
 
   return (
     <View style={styles.itemCard}>
       {hasImage && (
         <View style={styles.imageBox}>
-          <Image source={item.image} style={styles.itemImage} resizeMode="contain" />
+          <Image
+            source={item.image}
+            style={styles.itemImage}
+            resizeMode="contain"
+          />
         </View>
       )}
 
@@ -49,6 +62,24 @@ export default function MenuModalItem({ item, sectionType, onBuyPress }) {
             {item.buttonLabel || (item.available ? "BUY" : "SOLD")}
           </Text>
         </TouchableOpacity>
+      ) : isInventoryItem ? (
+        <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                  styles.equipButton,
+                  (item.isEquipped || isEquipping) && styles.equippedButton,
+                  ]}
+                onPress={() => onEquipPress?.(item)}
+                disabled={item.isEquipped || isEquipping}
+                >
+              <Text style={styles.equipButtonText}>
+                {item.isEquipped
+                   ? "EQUIPPED"
+                      : isEquipping
+                      ? "EQUIPPING..."
+                      : "EQUIP"}
+              </Text>
+          </TouchableOpacity>
       ) : (
         !!item.status && (
           <View style={styles.statusBadge}>
@@ -139,6 +170,28 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.pixel,
     fontSize: 8,
     color: "#21103F",
+  },
+
+  equipButton: {
+    backgroundColor: "#2c940d",
+    borderWidth: 2,
+    borderColor: "#ebdd19",
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    marginLeft: 8,
+  },
+
+  equippedButton: {
+    backgroundColor: "#374151",
+    borderColor: "#9CA3AF",
+    opacity: 0.8,
+  },
+
+  equipButtonText: {
+    fontFamily: Fonts.pixel,
+    fontSize: 8,
+    color: "#FFFFFF",
   },
 
   statusBadge: {

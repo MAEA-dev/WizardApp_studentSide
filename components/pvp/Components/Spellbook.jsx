@@ -13,7 +13,12 @@ import { HitShake } from "../Animation/HitShake";
 import { CARDS, PER_PAGE } from "../battleConstants";
 import { C } from "../PvpStyles";
 
-export function Book({ s, onPlay }) {
+export function Book({
+  s,
+  onPlay,
+  shakeHits = s.hits.me,
+  onShakeComplete,
+}) {
   const [page, setPage] = useState(0);
   const { width, height } = useWindowDimensions();
 
@@ -24,17 +29,19 @@ export function Book({ s, onPlay }) {
 
   const bookWidth = Math.min(width - 16, 600);
 
-
   const cardHeight = Math.min(
     Math.max(height * 0.23, 125),
     200
   );
 
-
   const playerPower = s.me.power || 0;
 
   return (
-    <HitShake hits={s.hits.me} style={styles.bookWrap}>
+    <HitShake
+      hits={shakeHits}
+      style={styles.bookWrap}
+      onComplete={onShakeComplete}
+    >
       <View
         style={[
           styles.book,

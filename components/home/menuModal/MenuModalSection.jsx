@@ -1,3 +1,4 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
@@ -7,21 +8,33 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { Fonts } from "../../../constants/Fonts";
 import MenuModalItem from "./MenuModalItem";
 
 export default function MenuModalSection({
   section,
+  sectionType,
   onBuyPress,
+  onEquipPress,
+  equippingItemId,
   loading = false,
   error = null,
   onRefresh,
 }) {
+  if (!section) return null;
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={section.icon} size={19} color="#FFD86B" />
-        <Text style={styles.sectionTitle}>{section.title}</Text>
+        <Ionicons
+          name={section.icon}
+          size={19}
+          color="#FFD86B"
+        />
+        <Text style={styles.sectionTitle}>
+          {section.title}
+        </Text>
       </View>
 
       {loading ? (
@@ -29,10 +42,14 @@ export default function MenuModalSection({
       ) : error ? (
         <View>
           <Text style={styles.emptyText}>{error}</Text>
-          <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
+
+          <TouchableOpacity
+            onPress={onRefresh}
+            style={styles.retryButton}
+          >
             <Text style={styles.retryText}>Try again</Text>
           </TouchableOpacity>
-        </View>   
+        </View>
       ) : section.items?.length > 0 ? (
         <ScrollView
           style={styles.itemsScroll}
@@ -42,8 +59,10 @@ export default function MenuModalSection({
             <MenuModalItem
               key={item.id}
               item={item}
-              sectionType={section.type}
+              sectionType={sectionType}
               onBuyPress={onBuyPress}
+              onEquipPress={onEquipPress}
+              isEquipping={equippingItemId === item.id}
             />
           ))}
         </ScrollView>
