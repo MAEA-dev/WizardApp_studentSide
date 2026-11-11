@@ -1,11 +1,18 @@
-import { CARDS, MAX_HP, manaFor, other } from "./battleConstants";
+
+import {
+  CARDS,
+  MAX_HP,
+  manaFor,
+  other,
+} from "./battleConstants";
+
 
 export const fresh = (
   iGoFirst,
   myPower = 0,
   opponentPower = 0,
   myHP = MAX_HP,
-  opponentHP = MAX_HP,
+  opponentHP = MAX_HP
 ) => {
   const playerHP = Math.max(1, Number(myHP) || MAX_HP);
   const rivalHP = Math.max(1, Number(opponentHP) || MAX_HP);
@@ -53,16 +60,29 @@ export const fresh = (
 };
 
 export function reducer(s, a) {
+
   if (a.t === "reset") {
-    return fresh(a.first, a.myPower, a.opponentPower, a.myHP, a.opponentHP);
+    return fresh(
+      a.first,
+      a.myPower,
+      a.opponentPower,
+      a.myHP,
+      a.opponentHP
+    );
   }
 
-  if (s.me.hp <= 0 || s.opp.hp <= 0 || s.turn !== a.who) {
+
+  if (
+    s.me.hp <= 0 ||
+    s.opp.hp <= 0 ||
+    s.turn !== a.who
+  ) {
     return s;
   }
 
   const who = a.who;
   const foe = other(who);
+
 
   if (a.t === "end") {
     const turns = {
@@ -84,11 +104,13 @@ export function reducer(s, a) {
     };
   }
 
+
   const card = CARDS.find((c) => c.id === a.id);
 
   if (!card || s[who].mana < card.cost) {
     return s;
   }
+
 
   const me = {
     ...s[who],
@@ -108,8 +130,9 @@ export function reducer(s, a) {
     [who]: s.manaUses[who] + 1,
   };
 
+  
   if (card.dmg) {
-    const totalDamage = card.dmg * me.power;
+    const totalDamage = card.dmg + me.power;
 
     const soak = Math.min(foeS.sh, totalDamage);
 
@@ -125,11 +148,14 @@ export function reducer(s, a) {
   }
 
   if (card.sh) {
-    me.sh += card.sh * me.maxHp;
+    me.sh += card.sh;
   }
 
   if (card.heal) {
-    me.hp = Math.min(me.maxHp, me.hp + card.heal * me.maxHp);
+    me.hp = Math.min(
+      me.maxHp,
+      me.hp + card.heal
+    );
   }
 
   const target = card.dmg ? foe : who;
