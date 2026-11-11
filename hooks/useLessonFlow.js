@@ -87,7 +87,6 @@ export const useLessonFlow = (lesson, options = {}) => {
   } = options;
 
   const completionHandledRef = useRef(false);
-  const completionInFlightRef = useRef(false);
   const lessonStartedAtRef = useRef(Date.now());
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -97,8 +96,6 @@ export const useLessonFlow = (lesson, options = {}) => {
     gold: 0,
   });
   const [completionResult, setCompletionResult] = useState(null);
-  const [completionError, setCompletionError] = useState(null);
-  const [isCompleting, setIsCompleting] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [wizardModal, setWizardModal] = useState(DEFAULT_MODAL);
 
@@ -139,7 +136,7 @@ export const useLessonFlow = (lesson, options = {}) => {
   const progress = useMemo(() => {
     if (!totalSteps) return 0;
 
-    return Math.round((currentStepIndex / totalSteps) * 100);
+    return Math.round(((currentStepIndex + 1) / totalSteps) * 100);
   }, [currentStepIndex, totalSteps]);
 
   const openWizardModal = useCallback(
@@ -157,7 +154,6 @@ export const useLessonFlow = (lesson, options = {}) => {
 
   const resetLessonFlow = useCallback(() => {
     completionHandledRef.current = false;
-    completionInFlightRef.current = false;
     lessonStartedAtRef.current = Date.now();
 
     setCurrentStepIndex(0);
@@ -167,8 +163,6 @@ export const useLessonFlow = (lesson, options = {}) => {
       gold: 0,
     });
     setCompletionResult(null);
-    setCompletionError(null);
-    setIsCompleting(false);
     setShowSummary(false);
 
     setWizardModal({
@@ -187,14 +181,14 @@ export const useLessonFlow = (lesson, options = {}) => {
   }, [lesson?.id, resetLessonFlow]);
 
   const completeLesson = useCallback(async () => {
-    if (completionHandledRef.current || completionInFlightRef.current) return;
+    if (completionHandledRef.current) return;
 
-    completionInFlightRef.current = true;
-    setIsCompleting(true);
-    setCompletionError(null);
+    completionHandledRef.current = true;
+
+    let result = null;
 
     try {
-      const result = await onLessonComplete?.({
+      result = await onLessonComplete?.({
         lesson,
         earnedReward: rewardEnabled ? earnedReward : { xp: 0, gold: 0 },
         correctAnswers,
@@ -205,18 +199,12 @@ export const useLessonFlow = (lesson, options = {}) => {
           Math.round((Date.now() - lessonStartedAtRef.current) / 1000)
         ),
       });
-      completionHandledRef.current = true;
-      setCompletionResult(result || null);
-      setShowSummary(true);
     } catch (error) {
       console.log("Lesson completion error:", error);
-      setCompletionError(
-        error?.message || "Your progress could not be saved. Please try again."
-      );
-    } finally {
-      completionInFlightRef.current = false;
-      setIsCompleting(false);
     }
+
+    setCompletionResult(result || null);
+    setShowSummary(true);
   }, [
     lesson,
     earnedReward,
@@ -330,8 +318,6 @@ export const useLessonFlow = (lesson, options = {}) => {
 
     earnedReward,
     completionResult,
-    completionError,
-    isCompleting,
     correctAnswers,
     totalQuestions,
     answerDetails,

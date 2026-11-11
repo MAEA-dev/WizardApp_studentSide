@@ -10,9 +10,10 @@ import { saveStudentCache } from "./studentCacheService";
 const STAT_REWARDS = {
   hp: 10,
   power: 2,
+  energy: 1,
 };
 
-const VALID_STATS = ["hp", "power"];
+const VALID_STATS = ["hp", "power", "energy"];
 
 const requireStudentUid = () => {
   const uid = auth.currentUser?.uid;

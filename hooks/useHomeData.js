@@ -7,7 +7,6 @@ import {
 } from "../data/homeData";
 
 import { useStudentData } from "./useStudentData";
-import { usePvpEnergy } from "./usePvpEnergy";
 
 const getExpPercent = (student) => {
   const xp = Number(student?.xp || 0);
@@ -18,7 +17,7 @@ const getExpPercent = (student) => {
   return Math.min((xp / maxXp) * 100, 100);
 };
 
-const buildStats = (student, energyValue) => {
+const buildStats = (student) => {
   return [
     {
       id: "hp",
@@ -37,7 +36,7 @@ const buildStats = (student, energyValue) => {
     {
       id: "energy",
       label: "ENERGY",
-      value: energyValue ?? student?.energy ?? 0,
+      value: student?.energy ?? 0,
       icon: "🔋",
       type: "energy",
     },
@@ -45,7 +44,6 @@ const buildStats = (student, energyValue) => {
 };
 
 export const useHomeData = () => {
-  const { energyStatus } = usePvpEnergy({ countdownEnabled: false });
   const {
     student,
     loading,
@@ -68,7 +66,7 @@ export const useHomeData = () => {
   const menuItems = homeMenuItems;
 
   const expPercent = getExpPercent(student);
-  const stats = buildStats(student, energyStatus?.energy);
+  const stats = buildStats(student);
 
   return {
     student,

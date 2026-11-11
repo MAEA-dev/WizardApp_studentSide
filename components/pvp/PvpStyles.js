@@ -46,21 +46,6 @@ export const st = StyleSheet.create({
     marginTop: 8,
   },
 
-  energyStatus: {
-    color: "#7dd3fc",
-    textAlign: "center",
-    fontSize: 17,
-    fontWeight: "800",
-    marginBottom: 10,
-  },
-
-  energyCountdown: {
-    color: "#b9b0dd",
-    textAlign: "center",
-    fontSize: 14,
-    marginBottom: 12,
-  },
-
   input: {
     backgroundColor: C.dusk,
     color: "#fff",
@@ -78,10 +63,6 @@ export const st = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 14,
-  },
-
-  btnDisabled: {
-    opacity: 0.45,
   },
 
   ghost: {
