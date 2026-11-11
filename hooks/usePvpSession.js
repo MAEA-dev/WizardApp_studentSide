@@ -42,7 +42,7 @@ const normalizeStats = (stats) => {
   };
 };
 
-export function usePvpSession() {
+export function usePvpSession({ onEnergyConsumed } = {}) {
   const [phase, setPhase] = useState("lobby");
   const [status, setStatus] = useState("");
 
@@ -254,7 +254,7 @@ export function usePvpSession() {
       myStatsRef.current = playerStats;
 
       const currentRelay = await connectToRoom(room, {
-   
+        userId: student.uid,
         avatarId: playerAvatarId,
         username,
 
@@ -277,12 +277,13 @@ export function usePvpSession() {
 
   
         onStart: ({
+          matchId,
           first,
           avatarId,
           username: rivalUsername,
           opponentStats: rivalStats,
         }) => {
-          battleIdRef.current = createBattleId();
+          battleIdRef.current = matchId || createBattleId();
 
           const enemyStats = normalizeStats(rivalStats);
 
@@ -303,6 +304,20 @@ export function usePvpSession() {
 
           setStatus("");
           setPhase("duel");
+        },
+
+        onEnergyConsumed,
+
+        onStartError: (error) => {
+          const insufficientEnergy =
+            error?.details?.reason === "INSUFFICIENT_ENERGY" ||
+            error?.customData?.details?.reason === "INSUFFICIENT_ENERGY";
+          setPhase("lobby");
+          setStatus(
+            insufficientEnergy
+              ? "You need at least 1 Energy to start a duel. Wait for Energy to regenerate and try again."
+              : error?.message || "The duel could not start. Please try again."
+          );
         },
 
         onWait: ({ reconnecting }) => {
@@ -371,16 +386,7 @@ export function usePvpSession() {
               who: "opp",
             });
           } else if (move.type === "rematch") {
-            battleIdRef.current = createBattleId();
-
-            dispatch({
-              t: "reset",
-              first: true,
-              myPower: playerStats.power,
-              opponentPower: opponentStatsRef.current.power,
-              myHP: playerStats.hp,
-              opponentHP: opponentStatsRef.current.hp,
-            });
+            relay.current?.acceptRematch(move.id);
           }
         },
 
@@ -427,23 +433,14 @@ export function usePvpSession() {
         joining.current = false;
       }
     }
-  }, [recordPvpResult]);
+  }, [recordPvpResult, onEnergyConsumed]);
 
 
   const rematch = useCallback(() => {
-    battleIdRef.current = createBattleId();
-
-    dispatch({
-      t: "reset",
-      first: false,
-      myPower: myStatsRef.current.power,
-      opponentPower: opponentStatsRef.current.power,
-      myHP: myStatsRef.current.hp,
-      opponentHP: opponentStatsRef.current.hp,
+    relay.current?.requestRematch().catch((error) => {
+      setStatus(`Unable to start rematch: ${error.message}`);
     });
-
-    send({ type: "rematch" });
-  }, [send]);
+  }, []);
 
   return {
     phase,

@@ -20,9 +20,11 @@ import { Lobby } from "./Components/Lobby";
 import { Duel } from "./Components/Duel";
 
 import { usePvpSession } from "../../hooks/usePvpSession";
+import { usePvpEnergy } from "../../hooks/usePvpEnergy";
 
 export default function App() {
   const [room, setRoom] = useState("");
+  const { energyStatus, countdown, applyEnergy } = usePvpEnergy();
 
   const {
     phase,
@@ -41,7 +43,7 @@ export default function App() {
     leave,
     surrender,
     rematch,
-  } = usePvpSession();
+  } = usePvpSession({ onEnergyConsumed: applyEnergy });
 
   return (
     <SafeAreaProvider>
@@ -54,6 +56,8 @@ export default function App() {
             room={room}
             setRoom={setRoom}
             status={status}
+            energyStatus={energyStatus}
+            countdown={countdown}
             onJoin={() => join(room)}
           />
         )}

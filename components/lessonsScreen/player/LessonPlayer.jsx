@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import React, { useCallback } from "react";
 
 import WizardMessage from "../../shared/wizardModal";
@@ -65,6 +65,8 @@ const LessonPlayer = ({
     selectedAnswer,
     earnedReward,
     completionResult,
+    completionError,
+    isCompleting,
 
     correctAnswers,
     totalQuestions,
@@ -144,9 +146,16 @@ const LessonPlayer = ({
           showSummary={showSummary}
           canGoNext={canGoNext}
           isLastStep={isLastStep}
+          isCompleting={isCompleting}
+          completionError={completionError}
           onNext={goToNextStep}
           onBack={onBack}
         />
+        {!!completionError && !showSummary && (
+          <Text style={styles.completionError} accessibilityRole="alert">
+            Progress was not saved. {completionError} Tap Retry Save to try again.
+          </Text>
+        )}
       </View>
 
       <WizardMessage
@@ -176,5 +185,11 @@ const styles = StyleSheet.create({
 
   contentContainer: {
     paddingBottom: 18,
+  },
+  completionError: {
+    color: "#FF8A8A",
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 6,
   },
 });

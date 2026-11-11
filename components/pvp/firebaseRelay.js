@@ -7,6 +7,7 @@ import {
   remove,
   runTransaction,
   serverTimestamp,
+  update,
 } from "firebase/database";
 
 import {
@@ -15,6 +16,10 @@ import {
 } from "../../constants/wizardAvatars";
 
 import { rtdb } from "../../services/firebaseConfig";
+import {
+  requestPvpRematch,
+  startPvpMatch,
+} from "../../services/pvpEnergyService";
 
 const ROOMS_PATH = "pvpRooms";
 const MOVES_PATH = "pvpMoves";
@@ -61,12 +66,13 @@ export async function connectToRoom(room, callbacks) {
   const playerId = createId();
   const avatarId = getWizardAvatarId(callbacks.avatarId);
   const username = String(callbacks.username || "").trim();
+  const userId = String(callbacks.userId || "").trim();
 
   // The player's Firestore profile stats.
   const playerStats = normalizeStats(callbacks.stats);
 
-  if (!username) {
-    throw new Error("Your account is missing a username.");
+  if (!username || !userId) {
+    throw new Error("Your account is missing PvP profile information.");
   }
 
   let slot;
@@ -78,9 +84,20 @@ export async function connectToRoom(room, callbacks) {
 
     const data = current || {};
     const players = data.players || {};
+    const disconnectedSlots = PLAYER_SLOTS.filter(
+      (playerSlot) => players[playerSlot] && players[playerSlot].connected === false
+    );
+    const resumeSlot = disconnectedSlots.find(
+      (playerSlot) => players[playerSlot].userId === userId
+    );
+    const resumingSession = Boolean(resumeSlot);
+    const activePlayers = Object.fromEntries(
+      Object.entries(players).filter(([, player]) => player?.connected !== false)
+    );
+    const playersForJoin = resumingSession ? players : activePlayers;
 
-    slot = PLAYER_SLOTS.find(
-      (playerSlot) => !players[playerSlot]
+    slot = resumeSlot || disconnectedSlots[0] || PLAYER_SLOTS.find(
+      (playerSlot) => !playersForJoin[playerSlot]
     );
 
     if (!slot) {
@@ -89,19 +106,21 @@ export async function connectToRoom(room, callbacks) {
       return;
     }
 
-    const playerCount = Object.keys(players).length;
+    const playerCount = Object.values(activePlayers).length;
 
     const startNewSession =
       !current ||
-      playerCount === 0 ||
-      (data.paired && playerCount === 1);
+      (!resumingSession && playerCount === 0) ||
+      (data.paired && playerCount === 1 && !resumingSession);
 
-    sessionId = startNewSession ? createId() : data.sessionId;
+    sessionId = resumingSession ? data.sessionId : startNewSession ? createId() : data.sessionId;
 
     const nextPlayers = {
-      ...players,
+      ...playersForJoin,
       [slot]: {
         id: playerId,
+        userId,
+        connected: true,
         username,
         avatarId,
 
@@ -110,12 +129,24 @@ export async function connectToRoom(room, callbacks) {
       },
     };
 
-    return {
+    const nextRoom = {
       sessionId,
       players: nextPlayers,
-      paired: Object.keys(nextPlayers).length === 2,
+      paired: Object.values(nextPlayers).filter((player) => player?.connected !== false).length === 2,
       updatedAt: serverTimestamp(),
     };
+    if (resumingSession) {
+      [
+        "startedSessionId",
+        "startedAt",
+        "startedMatchId",
+        "pendingRematchId",
+        "pendingRematchSessionId",
+      ].forEach((field) => {
+        if (data[field] !== undefined) nextRoom[field] = data[field];
+      });
+    }
+    return nextRoom;
   });
 
   if (joinError) {
@@ -134,6 +165,7 @@ export async function connectToRoom(room, callbacks) {
   let closed = false;
   let leaving = false;
   let started = false;
+  const matchRequestStates = new Map();
 
   let surrenderReceived = false;
 
@@ -173,6 +205,36 @@ export async function connectToRoom(room, callbacks) {
     callbacks.onError?.(asError(reason));
   };
 
+  const startMatch = (matchId, rival, retryAfterServerMarker = false) => {
+    const requestState = matchRequestStates.get(matchId);
+    if (requestState === "pending" || requestState === "started") return;
+    if (requestState === "waiting" && !retryAfterServerMarker) return;
+    matchRequestStates.set(matchId, "pending");
+
+    startPvpMatch({ roomKey, sessionId: activeSessionId, matchId })
+      .then((result) => {
+        if (!result.started) {
+          matchRequestStates.set(matchId, "waiting");
+          return;
+        }
+        matchRequestStates.set(matchId, "started");
+        started = true;
+        callbacks.onEnergyConsumed?.(result);
+        callbacks.onStart?.({
+          matchId,
+          first: slot === "player1",
+          avatarId: getWizardAvatarId(rival?.avatarId || DEFAULT_WIZARD_AVATAR),
+          username: rival?.username || "Opponent",
+          opponentStats: normalizeStats(rival?.stats),
+        });
+      })
+      .catch(async (error) => {
+        matchRequestStates.delete(matchId);
+        await leave().catch(() => {});
+        callbacks.onStartError?.(error);
+      });
+  };
+
   connectedUnsubscribe = onValue(
     ref(rtdb, ".info/connected"),
     (snapshot) => {
@@ -186,7 +248,16 @@ export async function connectToRoom(room, callbacks) {
       }
 
       onDisconnect(slotRef)
-        .remove()
+        .set({
+          id: playerId,
+          userId,
+          username,
+          avatarId,
+          stats: playerStats,
+          connected: false,
+          disconnectedAt: serverTimestamp(),
+        })
+        .then(() => update(slotRef, { connected: true }))
         .catch(reportError);
     },
     reportError
@@ -326,6 +397,7 @@ export async function connectToRoom(room, callbacks) {
       ) {
         activeSessionId = nextSessionId;
         started = false;
+        matchRequestStates.clear();
 
         subscribeToMoves(activeSessionId);
 
@@ -342,7 +414,7 @@ export async function connectToRoom(room, callbacks) {
 
       const rival = latestPlayers[rivalSlot];
 
-      const rivalActive = Boolean(rival);
+      const rivalActive = Boolean(rival && rival.connected !== false);
 
       const rivalAvatarId = getWizardAvatarId(
         rival?.avatarId || DEFAULT_WIZARD_AVATAR
@@ -361,21 +433,12 @@ export async function connectToRoom(room, callbacks) {
       callbacks.onOpponentUsername?.(rivalUsername);
       callbacks.onOpponentStats?.(rivalStats);
 
-      // ---------- battle starts ----------
-
-      if (rivalActive && !started) {
-        started = true;
-
-        callbacks.onStart?.({
-          first: slot === "player1",
-          avatarId: rivalAvatarId,
-          username: rivalUsername,
-
-          // Pass opponent stats when the duel starts.
-          opponentStats: rivalStats,
-        });
+      if (rivalActive && roomData.paired === true) {
+        const matchToResume = roomData.startedMatchId || activeSessionId;
+        startMatch(matchToResume, rival, Boolean(roomData.startedMatchId));
       } else if (!rivalActive && started) {
         started = false;
+        matchRequestStates.set(activeSessionId, "waiting");
 
         callbacks.onWait?.({
           reconnecting: false,
@@ -404,6 +467,23 @@ export async function connectToRoom(room, callbacks) {
       playerId,
       createdAt: serverTimestamp(),
     });
+  };
+
+  const requestRematch = async () => {
+    if (closed || leaving || surrenderReceived) {
+      throw new Error("You are no longer connected to this room.");
+    }
+    const rematchRequest = await requestPvpRematch({ roomKey, sessionId: activeSessionId });
+    const matchId = rematchRequest.matchId;
+    await send({ type: "rematch", id: matchId });
+    const rivalSlot = PLAYER_SLOTS.find((playerSlot) => playerSlot !== slot);
+    startMatch(matchId, latestPlayers[rivalSlot]);
+  };
+
+  const acceptRematch = (matchId) => {
+    if (!matchId || closed || leaving || surrenderReceived) return;
+    const rivalSlot = PLAYER_SLOTS.find((playerSlot) => playerSlot !== slot);
+    startMatch(matchId, latestPlayers[rivalSlot]);
   };
 
   // ---------- leave room ----------
@@ -548,6 +628,8 @@ export async function connectToRoom(room, callbacks) {
 
   return {
     send,
+    requestRematch,
+    acceptRematch,
     leave,
     surrender,
   };

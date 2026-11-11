@@ -23,11 +23,9 @@ import HomeMenu from "../../components/home/HomeMenu";
 import HomeMenuModal from "../../components/home/menuModal/HomeMenuModal";
 import WizardMessage from "../../components/shared/wizardModal";
 import HomeStatAllocationModal from "../../components/home/HomeStatAllocationModal";
+import { getTodayKey } from "../../services/dailyStreakService";
 
-import {
-  getTodayKey,
-  markDailyRewardModalSeen,
-} from "../../services/lessonCompletionService";
+import { markDailyRewardModalSeen } from "../../services/lessonCompletionService";
 
 const Home = () => {
   const router = useRouter();

@@ -8,17 +8,23 @@ const LessonFooter = ({
   showSummary,
   canGoNext,
   isLastStep,
+  isCompleting = false,
+  completionError = null,
   onNext,
   onBack,
 }) => {
   const buttonText = showSummary
     ? "Back to Lessons"
     : isLastStep
-    ? "Finish"
+    ? isCompleting
+      ? "Saving..."
+      : completionError
+      ? "Retry Save"
+      : "Finish"
     : "Next";
 
   const handlePress = showSummary ? onBack : onNext;
-  const disabled = !showSummary && !canGoNext;
+  const disabled = (!showSummary && !canGoNext) || isCompleting;
 
   return (
     <View style={styles.footer}>
