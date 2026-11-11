@@ -1,12 +1,11 @@
-
 import { useRef, useState } from "react";
 import {
   Animated,
-  View,
-  Text,
-  StyleSheet,
   Pressable,
+  StyleSheet,
+  Text,
   useWindowDimensions,
+  View,
 } from "react-native";
 
 import { C } from "../PvpStyles";
@@ -26,38 +25,22 @@ export function SpellCard({
   const { width, height } = useWindowDimensions();
 
   // Responsive sizing
-  const iconSize = Math.max(
-    20,
-    Math.min(width * 0.085, compact ? 29 : 38)
-  );
+  const iconSize = Math.max(20, Math.min(width * 0.085, compact ? 29 : 38));
 
-  const nameSize = Math.max(
-    9,
-    Math.min(width * 0.032, compact ? 11 : 14)
-  );
+  const nameSize = Math.max(9, Math.min(width * 0.032, compact ? 11 : 14));
 
   const descriptionSize = Math.max(
     7,
-    Math.min(width * 0.027, compact ? 9 : 12)
+    Math.min(width * 0.027, compact ? 9 : 12),
   );
 
-  const damageSize = Math.max(
-    8,
-    Math.min(width * 0.028, 11)
-  );
-
-  const totalDamageSize = Math.max(
-    10,
-    Math.min(width * 0.033, 13)
-  );
+  const totalDamageSize = Math.max(10, Math.min(width * 0.033, 13));
 
   const verticalSpacing = height < 700 ? 2 : 5;
 
-  // Magic Power bonus
+  // Card damage is a multiplier of the player's Magic Power.
   const magicPower = Math.max(0, Number(power) || 0);
-  const totalDamage = card.dmg
-    ? card.dmg + magicPower
-    : 0;
+  const totalDamage = card.dmg ? magicPower * card.dmg : 0;
 
   const play = () => {
     Animated.sequence([
@@ -90,10 +73,7 @@ export function SpellCard({
           padding: compact ? 4 : 6,
         },
         {
-          transform: [
-            { scale },
-            { translateY: pressed ? -5 : 0 },
-          ],
+          transform: [{ scale }, { translateY: pressed ? -5 : 0 }],
         },
       ]}
     >
@@ -147,28 +127,11 @@ export function SpellCard({
         {card.text}
       </Text>
 
-      {/* Magic Power bonus and final damage */}
+      {/* Total damage */}
       {card.dmg > 0 && (
-        <View
-          style={[
-            styles.damageContainer,
-            { marginTop: verticalSpacing },
-          ]}
-        >
-          <Text
-            style={[
-              styles.damageText,
-              { fontSize: damageSize, color: "#b45309", },
-            ]}
-          >
-            ⚔️ {card.dmg}
-            <Text style={[
-              styles.damageText,
-              { fontSize: damageSize , color:"#08ce08"},
-            ]}>
-              {magicPower > 0 ? ` + ${magicPower}` : ""}
-            </Text>
-            
+        <View style={[styles.damageContainer, { marginTop: verticalSpacing }]}>
+          <Text style={[styles.totalDamage, { fontSize: totalDamageSize }]}>
+            ⚔️ {Number(totalDamage.toFixed(2))}
           </Text>
         </View>
       )}
@@ -186,7 +149,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     alignItems: "center",
     justifyContent: "center",
-
   },
 
   cost: {
@@ -224,11 +186,6 @@ const styles = StyleSheet.create({
 
   damageContainer: {
     alignItems: "center",
-  },
-
-  damageText: {
-    
-    fontWeight: "700",
   },
 
   totalDamage: {
