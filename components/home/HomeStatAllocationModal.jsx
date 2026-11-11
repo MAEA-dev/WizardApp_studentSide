@@ -26,6 +26,12 @@ const STAT_OPTIONS = [
     description: "+2 Power",
     icon: "flash-outline",
   },
+  {
+    id: "energy",
+    label: "Energy",
+    description: "+1 Energy",
+    icon: "battery-charging-outline",
+  },
 ];
 
 const getSafePoints = (value) => {

@@ -1,8 +1,6 @@
-import { httpsCallable } from "firebase/functions";
+import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 
-import { auth, functions } from "./firebaseConfig";
-
-const updateLoginStreakCall = httpsCallable(functions, "updateStudentLoginStreak");
+import { auth, db } from "./firebaseConfig";
 
 export const getDateKey = (date = new Date()) => {
   const year = date.getFullYear();
@@ -34,12 +32,47 @@ export const calculateDailyStreak = ({
 };
 
 export const updateLoginStreak = async () => {
-  const user = auth.currentUser;
-  if (!user?.uid) {
+  const uid = auth.currentUser?.uid;
+
+  if (!uid) {
     throw new Error("Sign in to update your daily streak.");
   }
-  // Ensure a fresh Firebase Auth token is available before invoking the callable.
-  await user.getIdToken();
-  const response = await updateLoginStreakCall();
-  return response.data;
+
+  const todayKey = getTodayKey();
+  const yesterdayKey = getYesterdayKey();
+  const studentRef = doc(db, "users", uid);
+
+  return runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(studentRef);
+
+    if (!snapshot.exists()) {
+      throw new Error("Student data not found.");
+    }
+
+    const studentData = snapshot.data();
+    const lastStreakDate =
+      studentData.lastStreakDate || studentData.lastLessonRewardDate || null;
+
+    if (lastStreakDate === todayKey) {
+      return {
+        streak: Math.max(Number(studentData.streak) || 0, 1),
+        lastStreakDate: todayKey,
+      };
+    }
+
+    const streak = calculateDailyStreak({
+      currentStreak: studentData.streak,
+      lastStreakDate,
+      todayKey,
+      yesterdayKey,
+    });
+
+    transaction.update(studentRef, {
+      streak,
+      lastStreakDate: todayKey,
+      updatedAt: serverTimestamp(),
+    });
+
+    return { streak, lastStreakDate: todayKey };
+  });
 };
