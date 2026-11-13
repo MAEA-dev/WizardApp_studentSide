@@ -2,6 +2,7 @@ import { auth, db, functions } from "./firebaseConfig";
 
 import {
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
@@ -27,45 +28,46 @@ export const createUser = async (data) => {
   }
 };
 
-export const loginUsername = async ({
-  username,
-  password,
-}) => {
+const getEmailForUsername = async (username) => {
+  const cleanUsername = String(username || "")
+    .trim()
+    .toLowerCase();
+
+  if (!cleanUsername) {
+    const error = new Error("Username is required.");
+    error.code = "username/empty";
+    throw error;
+  }
+
+  const usernameRef = doc(db, "usernames", cleanUsername);
+  const usernameSnap = await getDoc(usernameRef);
+
+  if (!usernameSnap.exists()) {
+    const error = new Error("Username not found.");
+    error.code = "username/not-found";
+    throw error;
+  }
+
+  const email = usernameSnap.data()?.email;
+
+  if (!email) {
+    const error = new Error("Account email not found.");
+    error.code = "username/email-missing";
+    throw error;
+  }
+
+  return email;
+};
+
+export const loginUsername = async ({ username, password }) => {
   try {
-    const cleanUsername = String(username || "")
-      .trim()
-      .toLowerCase();
-
-    if (!cleanUsername) {
-      const error = new Error("Username is required.");
-      error.code = "username/empty";
-      throw error;
-    }
-
     if (!password) {
       const error = new Error("Password is required.");
       error.code = "password/empty";
       throw error;
     }
 
-    const usernameRef = doc(db, "usernames", cleanUsername);
-    const usernameSnap = await getDoc(usernameRef);
-
-    if (!usernameSnap.exists()) {
-      const error = new Error("Username not found.");
-      error.code = "username/not-found";
-      throw error;
-    }
-
-    const usernameData = usernameSnap.data();
-    const email = usernameData?.email;
-
-    if (!email) {
-      const error = new Error("Account email not found.");
-      error.code = "username/email-missing";
-      throw error;
-    }
-
+    const email = await getEmailForUsername(username);
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
@@ -77,6 +79,22 @@ export const loginUsername = async ({
     console.log("Login error:", error);
     throw error;
   }
+};
+
+export const sendPasswordResetForIdentifier = async (identifier) => {
+  const cleanIdentifier = String(identifier || "").trim();
+
+  if (!cleanIdentifier) {
+    const error = new Error("Enter your email or username.");
+    error.code = "username/empty";
+    throw error;
+  }
+
+  const email = cleanIdentifier.includes("@")
+    ? cleanIdentifier
+    : await getEmailForUsername(cleanIdentifier);
+
+  await sendPasswordResetEmail(auth, email);
 };
 
 export const logoutUser = async () => {
@@ -123,6 +141,9 @@ export const getAuthErrorMessage = (error) => {
 
     case "auth/network-request-failed":
       return "Check your internet connection.";
+
+    case "auth/invalid-email":
+      return "Enter a valid email address or username.";
 
     case "auth/user-disabled":
       return "This account has been disabled.";
