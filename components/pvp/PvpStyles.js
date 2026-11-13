@@ -98,6 +98,78 @@ export const st = StyleSheet.create({
     fontSize: 42,
   },
 
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(10,6,30,0.78)",
+    justifyContent: "center",
+    padding: 24,
+  },
+
+  modalCard: {
+    width: "100%",
+    maxWidth: 420,
+    alignSelf: "center",
+    backgroundColor: C.dusk,
+    borderWidth: 2,
+    borderColor: C.gold,
+    borderRadius: 18,
+    padding: 24,
+  },
+
+  modalTitle: {
+    color: C.gold,
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  modalMessage: {
+    color: "#fff",
+    fontSize: 16,
+    lineHeight: 23,
+    textAlign: "center",
+    marginTop: 12,
+  },
+
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 18,
+  },
+
+  modalButton: {
+    flex: 1,
+    backgroundColor: C.gold,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  modalButtonSecondary: {
+    backgroundColor: "#4b3b94",
+  },
+
+  modalSingleButton: {
+    flex: 0,
+    width: 140,
+    alignSelf: "center",
+    marginTop: 18,
+  },
+
+  modalButtonText: {
+    color: C.ink,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  modalButtonSecondaryText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
 top: {
   height: 280,
   width: "100%",

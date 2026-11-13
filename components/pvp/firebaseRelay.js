@@ -394,13 +394,39 @@ export async function connectToRoom(room, callbacks) {
       );
     }
 
-    if (!["play", "end", "rematch"].includes(move?.type)) {
+    const rematchTypes = [
+      "rematch-request",
+      "rematch-response",
+      "rematch-start",
+    ];
+
+    if (
+      !["play", "end", "rematch", ...rematchTypes].includes(move?.type)
+    ) {
       throw new Error("Unsupported PvP move.");
+    }
+
+    if (
+      rematchTypes.includes(move.type) &&
+      typeof move.requestId !== "string"
+    ) {
+      throw new Error("A rematch request ID is required.");
+    }
+
+    if (
+      move.type === "rematch-response" &&
+      typeof move.accepted !== "boolean"
+    ) {
+      throw new Error("A rematch response must include a decision.");
     }
 
     await push(sessionMovesRef(activeSessionId), {
       type: move.type,
       ...(move.id ? { id: move.id } : {}),
+      ...(move.requestId ? { requestId: move.requestId } : {}),
+      ...(typeof move.accepted === "boolean"
+        ? { accepted: move.accepted }
+        : {}),
       playerId,
       createdAt: serverTimestamp(),
     });

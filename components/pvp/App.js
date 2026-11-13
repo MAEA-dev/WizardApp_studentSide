@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 
 import {
+  Modal,
   Pressable,
   Text,
   View,
@@ -40,7 +41,13 @@ export default function App() {
     send,
     leave,
     surrender,
+    surrenderPromptVisible,
+    cancelSurrender,
+    confirmSurrender,
     rematch,
+    rematchDialog,
+    respondToRematch,
+    dismissRematchDialog,
   } = usePvpSession();
 
   return (
@@ -97,6 +104,102 @@ export default function App() {
             opponentStats={opponentStats}
           />
         )}
+
+        <Modal
+          visible={surrenderPromptVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={cancelSurrender}
+        >
+          <View style={st.modalBackdrop}>
+            <View style={st.modalCard}>
+              <Text style={st.modalTitle}>Surrender?</Text>
+              <Text style={st.modalMessage}>
+                Do you really want to exit? Exit means surrender.
+              </Text>
+
+              <View style={st.modalActions}>
+                <Pressable
+                  style={[st.modalButton, st.modalButtonSecondary]}
+                  onPress={cancelSurrender}
+                >
+                  <Text style={st.modalButtonSecondaryText}>No</Text>
+                </Pressable>
+                <Pressable
+                  style={st.modalButton}
+                  onPress={confirmSurrender}
+                >
+                  <Text style={st.modalButtonText}>Yes</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={Boolean(rematchDialog)}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            if (rematchDialog?.type === "incoming") {
+              respondToRematch(false);
+            } else {
+              dismissRematchDialog();
+            }
+          }}
+        >
+          <View style={st.modalBackdrop}>
+            <View style={st.modalCard}>
+              <Text style={st.modalTitle}>
+                {rematchDialog?.type === "incoming"
+                  ? "Rematch?"
+                  : rematchDialog?.type === "declined"
+                    ? "Rematch declined"
+                    : rematchDialog?.type === "error"
+                      ? "Rematch unavailable"
+                      : "Rematch"}
+              </Text>
+              <Text style={st.modalMessage}>
+                {rematchDialog?.type === "incoming"
+                  ? `${opponentUsername} wants a rematch. Do you agree?`
+                  : rematchDialog?.type === "waiting"
+                    ? `Waiting for ${opponentUsername} to respond…`
+                    : rematchDialog?.type === "starting"
+                      ? `${opponentUsername} agreed. Starting rematch…`
+                      : rematchDialog?.type === "declined"
+                        ? `${opponentUsername} declined the rematch.`
+                        : rematchDialog?.message}
+              </Text>
+
+              {rematchDialog?.type === "incoming" && (
+                <View style={st.modalActions}>
+                  <Pressable
+                    style={[st.modalButton, st.modalButtonSecondary]}
+                    onPress={() => respondToRematch(false)}
+                  >
+                    <Text style={st.modalButtonSecondaryText}>No</Text>
+                  </Pressable>
+                  <Pressable
+                    style={st.modalButton}
+                    onPress={() => respondToRematch(true)}
+                  >
+                    <Text style={st.modalButtonText}>Yes</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {(rematchDialog?.type === "declined" ||
+                rematchDialog?.type === "error") && (
+                <Pressable
+                  style={[st.modalButton, st.modalSingleButton]}
+                  onPress={dismissRematchDialog}
+                >
+                  <Text style={st.modalButtonText}>OK</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </SafeAreaProvider>
   );

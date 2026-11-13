@@ -14,7 +14,15 @@
     "columnNameCase": 1,
     "bracketType": 1,
     "relationshipDataTypeSync": false,
-    "columnOrder": [1, 2, 4, 8, 16, 32, 64],
+    "columnOrder": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
     "maxWidthComment": -1,
     "lockSettings": 63
   },
@@ -39,49 +47,6 @@
   },
   "collections": {
     "tableEntities": {
-      "tbl_users": {
-        "id": "tbl_users",
-        "name": "users",
-        "comment": "One student per Firebase Auth UID. Battle history and dungeon progress are embedded fields.",
-        "columnIds": [
-          "col_users_uid",
-          "col_users_username",
-          "col_users_grade_level",
-          "col_users_level",
-          "col_users_xp",
-          "col_users_gold",
-          "col_users_battle_history",
-          "col_users_dungeon_progress"
-        ],
-        "ui": { "x": 0, "y": 0 }
-      },
-      "tbl_subjects": {
-        "id": "tbl_subjects",
-        "name": "subjects",
-        "comment": "Firestore document ID is the subject key.",
-        "columnIds": [
-          "col_subjects_id",
-          "col_subjects_grade_level",
-          "col_subjects_active",
-          "col_subjects_active_quarter"
-        ],
-        "ui": { "x": 420, "y": 0 }
-      },
-      "tbl_lessons": {
-        "id": "tbl_lessons",
-        "name": "lessons",
-        "comment": "Lessons reference a subject by subjectId.",
-        "columnIds": [
-          "col_lessons_id",
-          "col_lessons_subject_id",
-          "col_lessons_title",
-          "col_lessons_grade_level",
-          "col_lessons_quarter",
-          "col_lessons_ai_status",
-          "col_lessons_is_published"
-        ],
-        "ui": { "x": 840, "y": 0 }
-      },
       "tbl_completed_lessons": {
         "id": "tbl_completed_lessons",
         "name": "completedLessons",
@@ -96,22 +61,10 @@
           "col_completed_xp_earned",
           "col_completed_at"
         ],
-        "ui": { "x": 0, "y": 390 }
-      },
-      "tbl_questions": {
-        "id": "tbl_questions",
-        "name": "questions",
-        "comment": "Question documents contain a questions array and may reference a lesson and subject.",
-        "columnIds": [
-          "col_questions_id",
-          "col_questions_lesson_id",
-          "col_questions_subject_id",
-          "col_questions_grade_level",
-          "col_questions_purpose",
-          "col_questions_is_published",
-          "col_questions_items"
-        ],
-        "ui": { "x": 420, "y": 390 }
+        "ui": {
+          "x": -212.7197,
+          "y": -94.2117
+        }
       },
       "tbl_leaderboards": {
         "id": "tbl_leaderboards",
@@ -127,144 +80,95 @@
           "col_leaderboards_pvp_wins",
           "col_leaderboards_pvp_losses"
         ],
-        "ui": { "x": 840, "y": 390 }
+        "ui": {
+          "x": -249.693,
+          "y": 181.3733
+        }
+      },
+      "tbl_lessons": {
+        "id": "tbl_lessons",
+        "name": "lessons",
+        "comment": "Lessons reference a subject by subjectId.",
+        "columnIds": [
+          "col_lessons_id",
+          "col_lessons_subject_id",
+          "col_lessons_title",
+          "col_lessons_grade_level",
+          "col_lessons_quarter",
+          "col_lessons_ai_status",
+          "col_lessons_is_published"
+        ],
+        "ui": {
+          "x": 663.9023,
+          "y": -142.4714
+        }
+      },
+      "tbl_questions": {
+        "id": "tbl_questions",
+        "name": "questions",
+        "comment": "Question documents contain a questions array and may reference a lesson and subject.",
+        "columnIds": [
+          "col_questions_id",
+          "col_questions_lesson_id",
+          "col_questions_subject_id",
+          "col_questions_grade_level",
+          "col_questions_purpose",
+          "col_questions_is_published",
+          "col_questions_items"
+        ],
+        "ui": {
+          "x": 343.3183,
+          "y": 176.038
+        }
+      },
+      "tbl_subjects": {
+        "id": "tbl_subjects",
+        "name": "subjects",
+        "comment": "Firestore document ID is the subject key.",
+        "columnIds": [
+          "col_subjects_id",
+          "col_subjects_grade_level",
+          "col_subjects_active",
+          "col_subjects_active_quarter"
+        ],
+        "ui": {
+          "x": 450.4815,
+          "y": -338.1598
+        }
+      },
+      "tbl_users": {
+        "id": "tbl_users",
+        "name": "users",
+        "comment": "One student per Firebase Auth UID. Battle history and dungeon progress are embedded fields.",
+        "columnIds": [
+          "col_users_uid",
+          "col_users_username",
+          "col_users_grade_level",
+          "col_users_level",
+          "col_users_xp",
+          "col_users_gold",
+          "col_users_battle_history",
+          "col_users_dungeon_progress"
+        ],
+        "ui": {
+          "x": -253.5824,
+          "y": -380.2636
+        }
       }
     },
     "tableColumnEntities": {
-      "col_users_uid": {
-        "id": "col_users_uid",
-        "tableId": "tbl_users",
-        "name": "uid",
-        "comment": "Firestore document ID (Firebase Auth UID).",
-        "dataType": "varchar(128)",
-        "options": 10
-      },
-      "col_users_username": {
-        "id": "col_users_username",
-        "tableId": "tbl_users",
-        "name": "username",
-        "dataType": "varchar(64)",
+      "col_completed_at": {
+        "id": "col_completed_at",
+        "tableId": "tbl_completed_lessons",
+        "name": "completedAt",
+        "dataType": "timestamp",
         "options": 0
       },
-      "col_users_grade_level": {
-        "id": "col_users_grade_level",
-        "tableId": "tbl_users",
-        "name": "gradeLevel",
-        "dataType": "varchar(16)",
-        "options": 0
-      },
-      "col_users_level": {
-        "id": "col_users_level",
-        "tableId": "tbl_users",
-        "name": "level",
+      "col_completed_correct_answers": {
+        "id": "col_completed_correct_answers",
+        "tableId": "tbl_completed_lessons",
+        "name": "correctAnswers",
         "dataType": "integer",
-        "options": 0
-      },
-      "col_users_xp": {
-        "id": "col_users_xp",
-        "tableId": "tbl_users",
-        "name": "xp",
-        "dataType": "integer",
-        "options": 0
-      },
-      "col_users_gold": {
-        "id": "col_users_gold",
-        "tableId": "tbl_users",
-        "name": "gold",
-        "dataType": "integer",
-        "options": 0
-      },
-      "col_users_battle_history": {
-        "id": "col_users_battle_history",
-        "tableId": "tbl_users",
-        "name": "battleHistory",
-        "dataType": "json",
-        "options": 0
-      },
-      "col_users_dungeon_progress": {
-        "id": "col_users_dungeon_progress",
-        "tableId": "tbl_users",
-        "name": "dungeonProgress",
-        "dataType": "json",
-        "options": 0
-      },
-      "col_subjects_id": {
-        "id": "col_subjects_id",
-        "tableId": "tbl_subjects",
-        "name": "id",
-        "comment": "Firestore document ID.",
-        "dataType": "varchar(128)",
-        "options": 10
-      },
-      "col_subjects_grade_level": {
-        "id": "col_subjects_grade_level",
-        "tableId": "tbl_subjects",
-        "name": "gradeLevel",
-        "dataType": "varchar(16)",
-        "options": 0
-      },
-      "col_subjects_active": {
-        "id": "col_subjects_active",
-        "tableId": "tbl_subjects",
-        "name": "active",
-        "dataType": "boolean",
-        "options": 0
-      },
-      "col_subjects_active_quarter": {
-        "id": "col_subjects_active_quarter",
-        "tableId": "tbl_subjects",
-        "name": "activeQuarter",
-        "dataType": "integer",
-        "options": 0
-      },
-      "col_lessons_id": {
-        "id": "col_lessons_id",
-        "tableId": "tbl_lessons",
-        "name": "id",
-        "comment": "Firestore document ID.",
-        "dataType": "varchar(128)",
-        "options": 10
-      },
-      "col_lessons_subject_id": {
-        "id": "col_lessons_subject_id",
-        "tableId": "tbl_lessons",
-        "name": "subjectId",
-        "dataType": "varchar(128)",
-        "options": 8
-      },
-      "col_lessons_title": {
-        "id": "col_lessons_title",
-        "tableId": "tbl_lessons",
-        "name": "title",
-        "dataType": "varchar(255)",
-        "options": 0
-      },
-      "col_lessons_grade_level": {
-        "id": "col_lessons_grade_level",
-        "tableId": "tbl_lessons",
-        "name": "gradeLevel",
-        "dataType": "varchar(16)",
-        "options": 0
-      },
-      "col_lessons_quarter": {
-        "id": "col_lessons_quarter",
-        "tableId": "tbl_lessons",
-        "name": "quarter",
-        "dataType": "integer",
-        "options": 0
-      },
-      "col_lessons_ai_status": {
-        "id": "col_lessons_ai_status",
-        "tableId": "tbl_lessons",
-        "name": "aiStatus",
-        "dataType": "varchar(32)",
-        "options": 0
-      },
-      "col_lessons_is_published": {
-        "id": "col_lessons_is_published",
-        "tableId": "tbl_lessons",
-        "name": "isPublished",
-        "dataType": "boolean",
         "options": 0
       },
       "col_completed_id": {
@@ -274,13 +178,6 @@
         "comment": "Composite Firestore document ID: userId_lessonId.",
         "dataType": "varchar(256)",
         "options": 10
-      },
-      "col_completed_user_id": {
-        "id": "col_completed_user_id",
-        "tableId": "tbl_completed_lessons",
-        "name": "userId",
-        "dataType": "varchar(128)",
-        "options": 8
       },
       "col_completed_lesson_id": {
         "id": "col_completed_lesson_id",
@@ -296,19 +193,19 @@
         "dataType": "varchar(128)",
         "options": 0
       },
-      "col_completed_correct_answers": {
-        "id": "col_completed_correct_answers",
-        "tableId": "tbl_completed_lessons",
-        "name": "correctAnswers",
-        "dataType": "integer",
-        "options": 0
-      },
       "col_completed_total_questions": {
         "id": "col_completed_total_questions",
         "tableId": "tbl_completed_lessons",
         "name": "totalQuestions",
         "dataType": "integer",
         "options": 0
+      },
+      "col_completed_user_id": {
+        "id": "col_completed_user_id",
+        "tableId": "tbl_completed_lessons",
+        "name": "userId",
+        "dataType": "varchar(128)",
+        "options": 8
       },
       "col_completed_xp_earned": {
         "id": "col_completed_xp_earned",
@@ -317,61 +214,46 @@
         "dataType": "integer",
         "options": 0
       },
-      "col_completed_at": {
-        "id": "col_completed_at",
-        "tableId": "tbl_completed_lessons",
-        "name": "completedAt",
-        "dataType": "timestamp",
+      "col_leaderboards_overall_losses": {
+        "id": "col_leaderboards_overall_losses",
+        "tableId": "tbl_leaderboards",
+        "name": "overallLosses",
+        "dataType": "integer",
         "options": 0
       },
-      "col_questions_id": {
-        "id": "col_questions_id",
-        "tableId": "tbl_questions",
-        "name": "id",
-        "comment": "Firestore document ID.",
-        "dataType": "varchar(128)",
-        "options": 10
-      },
-      "col_questions_lesson_id": {
-        "id": "col_questions_lesson_id",
-        "tableId": "tbl_questions",
-        "name": "lessonId",
-        "dataType": "varchar(128)",
+      "col_leaderboards_overall_wins": {
+        "id": "col_leaderboards_overall_wins",
+        "tableId": "tbl_leaderboards",
+        "name": "overallWins",
+        "dataType": "integer",
         "options": 0
       },
-      "col_questions_subject_id": {
-        "id": "col_questions_subject_id",
-        "tableId": "tbl_questions",
-        "name": "subjectId",
-        "dataType": "varchar(128)",
+      "col_leaderboards_pve_losses": {
+        "id": "col_leaderboards_pve_losses",
+        "tableId": "tbl_leaderboards",
+        "name": "pveLosses",
+        "dataType": "integer",
         "options": 0
       },
-      "col_questions_grade_level": {
-        "id": "col_questions_grade_level",
-        "tableId": "tbl_questions",
-        "name": "gradeLevel",
-        "dataType": "varchar(16)",
+      "col_leaderboards_pve_wins": {
+        "id": "col_leaderboards_pve_wins",
+        "tableId": "tbl_leaderboards",
+        "name": "pveWins",
+        "dataType": "integer",
         "options": 0
       },
-      "col_questions_purpose": {
-        "id": "col_questions_purpose",
-        "tableId": "tbl_questions",
-        "name": "purpose",
-        "dataType": "varchar(32)",
+      "col_leaderboards_pvp_losses": {
+        "id": "col_leaderboards_pvp_losses",
+        "tableId": "tbl_leaderboards",
+        "name": "pvpLosses",
+        "dataType": "integer",
         "options": 0
       },
-      "col_questions_is_published": {
-        "id": "col_questions_is_published",
-        "tableId": "tbl_questions",
-        "name": "isPublished",
-        "dataType": "boolean",
-        "options": 0
-      },
-      "col_questions_items": {
-        "id": "col_questions_items",
-        "tableId": "tbl_questions",
-        "name": "questions",
-        "dataType": "json",
+      "col_leaderboards_pvp_wins": {
+        "id": "col_leaderboards_pvp_wins",
+        "tableId": "tbl_leaderboards",
+        "name": "pvpWins",
+        "dataType": "integer",
         "options": 0
       },
       "col_leaderboards_user_id": {
@@ -389,78 +271,194 @@
         "dataType": "varchar(64)",
         "options": 0
       },
-      "col_leaderboards_overall_wins": {
-        "id": "col_leaderboards_overall_wins",
-        "tableId": "tbl_leaderboards",
-        "name": "overallWins",
+      "col_lessons_ai_status": {
+        "id": "col_lessons_ai_status",
+        "tableId": "tbl_lessons",
+        "name": "aiStatus",
+        "dataType": "varchar(32)",
+        "options": 0
+      },
+      "col_lessons_grade_level": {
+        "id": "col_lessons_grade_level",
+        "tableId": "tbl_lessons",
+        "name": "gradeLevel",
+        "dataType": "varchar(16)",
+        "options": 0
+      },
+      "col_lessons_id": {
+        "id": "col_lessons_id",
+        "tableId": "tbl_lessons",
+        "name": "id",
+        "comment": "Firestore document ID.",
+        "dataType": "varchar(128)",
+        "options": 10
+      },
+      "col_lessons_is_published": {
+        "id": "col_lessons_is_published",
+        "tableId": "tbl_lessons",
+        "name": "isPublished",
+        "dataType": "boolean",
+        "options": 0
+      },
+      "col_lessons_quarter": {
+        "id": "col_lessons_quarter",
+        "tableId": "tbl_lessons",
+        "name": "quarter",
         "dataType": "integer",
         "options": 0
       },
-      "col_leaderboards_overall_losses": {
-        "id": "col_leaderboards_overall_losses",
-        "tableId": "tbl_leaderboards",
-        "name": "overallLosses",
+      "col_lessons_subject_id": {
+        "id": "col_lessons_subject_id",
+        "tableId": "tbl_lessons",
+        "name": "subjectId",
+        "dataType": "varchar(128)",
+        "options": 8
+      },
+      "col_lessons_title": {
+        "id": "col_lessons_title",
+        "tableId": "tbl_lessons",
+        "name": "title",
+        "dataType": "varchar(255)",
+        "options": 0
+      },
+      "col_questions_grade_level": {
+        "id": "col_questions_grade_level",
+        "tableId": "tbl_questions",
+        "name": "gradeLevel",
+        "dataType": "varchar(16)",
+        "options": 0
+      },
+      "col_questions_id": {
+        "id": "col_questions_id",
+        "tableId": "tbl_questions",
+        "name": "id",
+        "comment": "Firestore document ID.",
+        "dataType": "varchar(128)",
+        "options": 10
+      },
+      "col_questions_is_published": {
+        "id": "col_questions_is_published",
+        "tableId": "tbl_questions",
+        "name": "isPublished",
+        "dataType": "boolean",
+        "options": 0
+      },
+      "col_questions_items": {
+        "id": "col_questions_items",
+        "tableId": "tbl_questions",
+        "name": "questions",
+        "dataType": "json",
+        "options": 0
+      },
+      "col_questions_lesson_id": {
+        "id": "col_questions_lesson_id",
+        "tableId": "tbl_questions",
+        "name": "lessonId",
+        "dataType": "varchar(128)",
+        "options": 0
+      },
+      "col_questions_purpose": {
+        "id": "col_questions_purpose",
+        "tableId": "tbl_questions",
+        "name": "purpose",
+        "dataType": "varchar(32)",
+        "options": 0
+      },
+      "col_questions_subject_id": {
+        "id": "col_questions_subject_id",
+        "tableId": "tbl_questions",
+        "name": "subjectId",
+        "dataType": "varchar(128)",
+        "options": 0
+      },
+      "col_subjects_active": {
+        "id": "col_subjects_active",
+        "tableId": "tbl_subjects",
+        "name": "active",
+        "dataType": "boolean",
+        "options": 0
+      },
+      "col_subjects_active_quarter": {
+        "id": "col_subjects_active_quarter",
+        "tableId": "tbl_subjects",
+        "name": "activeQuarter",
         "dataType": "integer",
         "options": 0
       },
-      "col_leaderboards_pve_wins": {
-        "id": "col_leaderboards_pve_wins",
-        "tableId": "tbl_leaderboards",
-        "name": "pveWins",
+      "col_subjects_grade_level": {
+        "id": "col_subjects_grade_level",
+        "tableId": "tbl_subjects",
+        "name": "gradeLevel",
+        "dataType": "varchar(16)",
+        "options": 0
+      },
+      "col_subjects_id": {
+        "id": "col_subjects_id",
+        "tableId": "tbl_subjects",
+        "name": "id",
+        "comment": "Firestore document ID.",
+        "dataType": "varchar(128)",
+        "options": 10
+      },
+      "col_users_battle_history": {
+        "id": "col_users_battle_history",
+        "tableId": "tbl_users",
+        "name": "battleHistory",
+        "dataType": "json",
+        "options": 0
+      },
+      "col_users_dungeon_progress": {
+        "id": "col_users_dungeon_progress",
+        "tableId": "tbl_users",
+        "name": "dungeonProgress",
+        "dataType": "json",
+        "options": 0
+      },
+      "col_users_gold": {
+        "id": "col_users_gold",
+        "tableId": "tbl_users",
+        "name": "gold",
         "dataType": "integer",
         "options": 0
       },
-      "col_leaderboards_pve_losses": {
-        "id": "col_leaderboards_pve_losses",
-        "tableId": "tbl_leaderboards",
-        "name": "pveLosses",
+      "col_users_grade_level": {
+        "id": "col_users_grade_level",
+        "tableId": "tbl_users",
+        "name": "gradeLevel",
+        "dataType": "varchar(16)",
+        "options": 0
+      },
+      "col_users_level": {
+        "id": "col_users_level",
+        "tableId": "tbl_users",
+        "name": "level",
         "dataType": "integer",
         "options": 0
       },
-      "col_leaderboards_pvp_wins": {
-        "id": "col_leaderboards_pvp_wins",
-        "tableId": "tbl_leaderboards",
-        "name": "pvpWins",
-        "dataType": "integer",
+      "col_users_uid": {
+        "id": "col_users_uid",
+        "tableId": "tbl_users",
+        "name": "uid",
+        "comment": "Firestore document ID (Firebase Auth UID).",
+        "dataType": "varchar(128)",
+        "options": 10
+      },
+      "col_users_username": {
+        "id": "col_users_username",
+        "tableId": "tbl_users",
+        "name": "username",
+        "dataType": "varchar(64)",
         "options": 0
       },
-      "col_leaderboards_pvp_losses": {
-        "id": "col_leaderboards_pvp_losses",
-        "tableId": "tbl_leaderboards",
-        "name": "pvpLosses",
+      "col_users_xp": {
+        "id": "col_users_xp",
+        "tableId": "tbl_users",
+        "name": "xp",
         "dataType": "integer",
         "options": 0
       }
     },
     "relationshipEntities": {
-      "rel_subject_lessons": {
-        "id": "rel_subject_lessons",
-        "relationshipType": 4,
-        "onDelete": 1,
-        "onUpdate": 1,
-        "start": {
-          "tableId": "tbl_subjects",
-          "columnIds": ["col_subjects_id"]
-        },
-        "end": {
-          "tableId": "tbl_lessons",
-          "columnIds": ["col_lessons_subject_id"]
-        }
-      },
-      "rel_user_completions": {
-        "id": "rel_user_completions",
-        "relationshipType": 4,
-        "onDelete": 1,
-        "onUpdate": 1,
-        "start": {
-          "tableId": "tbl_users",
-          "columnIds": ["col_users_uid"]
-        },
-        "end": {
-          "tableId": "tbl_completed_lessons",
-          "columnIds": ["col_completed_user_id"]
-        }
-      },
       "rel_lesson_completions": {
         "id": "rel_lesson_completions",
         "relationshipType": 4,
@@ -468,25 +466,15 @@
         "onUpdate": 1,
         "start": {
           "tableId": "tbl_lessons",
-          "columnIds": ["col_lessons_id"]
+          "columnIds": [
+            "col_lessons_id"
+          ]
         },
         "end": {
           "tableId": "tbl_completed_lessons",
-          "columnIds": ["col_completed_lesson_id"]
-        }
-      },
-      "rel_subject_completions": {
-        "id": "rel_subject_completions",
-        "relationshipType": 4,
-        "onDelete": 1,
-        "onUpdate": 1,
-        "start": {
-          "tableId": "tbl_subjects",
-          "columnIds": ["col_subjects_id"]
-        },
-        "end": {
-          "tableId": "tbl_completed_lessons",
-          "columnIds": ["col_completed_subject_id"]
+          "columnIds": [
+            "col_completed_lesson_id"
+          ]
         }
       },
       "rel_lesson_questions": {
@@ -496,11 +484,51 @@
         "onUpdate": 1,
         "start": {
           "tableId": "tbl_lessons",
-          "columnIds": ["col_lessons_id"]
+          "columnIds": [
+            "col_lessons_id"
+          ]
         },
         "end": {
           "tableId": "tbl_questions",
-          "columnIds": ["col_questions_lesson_id"]
+          "columnIds": [
+            "col_questions_lesson_id"
+          ]
+        }
+      },
+      "rel_subject_completions": {
+        "id": "rel_subject_completions",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "tbl_subjects",
+          "columnIds": [
+            "col_subjects_id"
+          ]
+        },
+        "end": {
+          "tableId": "tbl_completed_lessons",
+          "columnIds": [
+            "col_completed_subject_id"
+          ]
+        }
+      },
+      "rel_subject_lessons": {
+        "id": "rel_subject_lessons",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "tbl_subjects",
+          "columnIds": [
+            "col_subjects_id"
+          ]
+        },
+        "end": {
+          "tableId": "tbl_lessons",
+          "columnIds": [
+            "col_lessons_subject_id"
+          ]
         }
       },
       "rel_subject_questions": {
@@ -510,11 +538,33 @@
         "onUpdate": 1,
         "start": {
           "tableId": "tbl_subjects",
-          "columnIds": ["col_subjects_id"]
+          "columnIds": [
+            "col_subjects_id"
+          ]
         },
         "end": {
           "tableId": "tbl_questions",
-          "columnIds": ["col_questions_subject_id"]
+          "columnIds": [
+            "col_questions_subject_id"
+          ]
+        }
+      },
+      "rel_user_completions": {
+        "id": "rel_user_completions",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "tbl_users",
+          "columnIds": [
+            "col_users_uid"
+          ]
+        },
+        "end": {
+          "tableId": "tbl_completed_lessons",
+          "columnIds": [
+            "col_completed_user_id"
+          ]
         }
       },
       "rel_user_leaderboard": {
@@ -524,11 +574,15 @@
         "onUpdate": 1,
         "start": {
           "tableId": "tbl_users",
-          "columnIds": ["col_users_uid"]
+          "columnIds": [
+            "col_users_uid"
+          ]
         },
         "end": {
           "tableId": "tbl_leaderboards",
-          "columnIds": ["col_leaderboards_user_id"]
+          "columnIds": [
+            "col_leaderboards_user_id"
+          ]
         }
       }
     }

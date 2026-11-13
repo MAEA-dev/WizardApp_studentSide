@@ -45,6 +45,8 @@ const normalizeStats = (stats) => {
 export function usePvpSession() {
   const [phase, setPhase] = useState("lobby");
   const [status, setStatus] = useState("");
+  const [surrenderPromptVisible, setSurrenderPromptVisible] = useState(false);
+  const [rematchDialog, setRematchDialog] = useState(null);
 
   const [opponentAvatarId, setOpponentAvatarId] = useState(
     DEFAULT_WIZARD_AVATAR
@@ -64,6 +66,8 @@ export function usePvpSession() {
   const joining = useRef(false);
   const surrendering = useRef(false);
   const joinAttempt = useRef(0);
+  const pendingRematchRequestId = useRef(null);
+  const acceptedRematchRequestId = useRef(null);
 
   const battleIdRef = useRef(createBattleId());
   const recordedBattleIdRef = useRef(null);
@@ -113,10 +117,30 @@ export function usePvpSession() {
     });
   }, []);
 
+  const startRematch = useCallback((first) => {
+    battleIdRef.current = createBattleId();
+
+    dispatch({
+      t: "reset",
+      first,
+      myPower: myStatsRef.current.power,
+      opponentPower: opponentStatsRef.current.power,
+      myHP: myStatsRef.current.hp,
+      opponentHP: opponentStatsRef.current.hp,
+    });
+
+    setStatus("");
+    setRematchDialog(null);
+  }, []);
+
 
   const leave = useCallback(() => {
     joinAttempt.current += 1;
     joining.current = false;
+    pendingRematchRequestId.current = null;
+    acceptedRematchRequestId.current = null;
+    setSurrenderPromptVisible(false);
+    setRematchDialog(null);
 
     const currentRelay = relay.current;
     relay.current = null;
@@ -133,7 +157,19 @@ export function usePvpSession() {
   }, []);
 
 
-  const surrender = useCallback(async () => {
+  const surrender = useCallback(() => {
+    if (phase === "duel") {
+      setSurrenderPromptVisible(true);
+    }
+  }, [phase]);
+
+  const cancelSurrender = useCallback(() => {
+    setSurrenderPromptVisible(false);
+  }, []);
+
+  const confirmSurrender = useCallback(async () => {
+    setSurrenderPromptVisible(false);
+
     if (surrendering.current) return;
 
     const currentRelay = relay.current;
@@ -175,6 +211,9 @@ export function usePvpSession() {
 
       setOpponentStats(DEFAULT_STATS);
       opponentStatsRef.current = DEFAULT_STATS;
+      pendingRematchRequestId.current = null;
+      acceptedRematchRequestId.current = null;
+      setRematchDialog(null);
 
       setPhase("lobby");
 
@@ -221,6 +260,10 @@ export function usePvpSession() {
     const attempt = ++joinAttempt.current;
 
     setStatus("Preparing arena...");
+    setSurrenderPromptVisible(false);
+    setRematchDialog(null);
+    pendingRematchRequestId.current = null;
+    acceptedRematchRequestId.current = null;
 
     setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
     setOpponentUsername("Opponent");
@@ -302,10 +345,27 @@ export function usePvpSession() {
           });
 
           setStatus("");
+          setSurrenderPromptVisible(false);
+          setRematchDialog(null);
           setPhase("duel");
         },
 
         onWait: ({ reconnecting }) => {
+          const rematchWasPending =
+            pendingRematchRequestId.current ||
+            acceptedRematchRequestId.current;
+
+          pendingRematchRequestId.current = null;
+          acceptedRematchRequestId.current = null;
+          setRematchDialog(
+            rematchWasPending
+              ? {
+                  type: "error",
+                  message: "Your rival left before the rematch could start.",
+                }
+              : null
+          );
+
           setPhase("wait");
 
           setStatus(
@@ -323,6 +383,10 @@ export function usePvpSession() {
           recordPvpResult("won", rivalUsername || "Opponent");
 
           relay.current = null;
+          setSurrenderPromptVisible(false);
+          setRematchDialog(null);
+          pendingRematchRequestId.current = null;
+          acceptedRematchRequestId.current = null;
 
           dispatch({
             t: "reset",
@@ -370,17 +434,82 @@ export function usePvpSession() {
               t: "end",
               who: "opp",
             });
-          } else if (move.type === "rematch") {
-            battleIdRef.current = createBattleId();
+          } else if (
+            move.type === "rematch-request" &&
+            typeof move.requestId === "string"
+          ) {
+            const pendingRequestId = pendingRematchRequestId.current;
 
-            dispatch({
-              t: "reset",
-              first: true,
-              myPower: playerStats.power,
-              opponentPower: opponentStatsRef.current.power,
-              myHP: playerStats.hp,
-              opponentHP: opponentStatsRef.current.hp,
-            });
+            if (
+              acceptedRematchRequestId.current ||
+              (pendingRequestId && pendingRequestId < move.requestId)
+            ) {
+              return;
+            }
+
+            acceptedRematchRequestId.current = move.requestId;
+
+            if (pendingRequestId) {
+              pendingRematchRequestId.current = null;
+              setRematchDialog({ type: "starting" });
+
+              relay.current
+                ?.send({
+                  type: "rematch-response",
+                  requestId: move.requestId,
+                  accepted: true,
+                })
+                .catch((error) => {
+                  console.error("Unable to agree to PvP rematch:", error);
+                  setRematchDialog({
+                    type: "error",
+                    message: `Unable to respond to rematch: ${error.message}`,
+                  });
+                });
+            } else {
+              setRematchDialog({ type: "incoming" });
+            }
+          } else if (
+            move.type === "rematch-response" &&
+            move.requestId === pendingRematchRequestId.current
+          ) {
+            pendingRematchRequestId.current = null;
+
+            if (move.accepted === true) {
+              const currentRelay = relay.current;
+
+              if (!currentRelay) {
+                setRematchDialog({
+                  type: "error",
+                  message: "Your room connection is unavailable.",
+                });
+                return;
+              }
+
+              currentRelay
+                .send({
+                  type: "rematch-start",
+                  requestId: move.requestId,
+                })
+                .then(() => startRematch(false))
+                .catch((error) => {
+                  console.error("Unable to start PvP rematch:", error);
+                  setRematchDialog({
+                    type: "error",
+                    message: `Unable to start rematch: ${error.message}`,
+                  });
+                });
+            } else {
+              setRematchDialog({ type: "declined" });
+            }
+          } else if (
+            move.type === "rematch-start" &&
+            move.requestId === acceptedRematchRequestId.current
+          ) {
+            acceptedRematchRequestId.current = null;
+            startRematch(true);
+          } else if (move.type === "rematch") {
+            startRematch(true);
           }
         },
 
@@ -393,6 +522,10 @@ export function usePvpSession() {
 
           const failedRelay = relay.current;
           relay.current = null;
+          pendingRematchRequestId.current = null;
+          acceptedRematchRequestId.current = null;
+          setSurrenderPromptVisible(false);
+          setRematchDialog(null);
 
           failedRelay?.leave().catch((leaveError) => {
             console.error(
@@ -427,23 +560,78 @@ export function usePvpSession() {
         joining.current = false;
       }
     }
-  }, [recordPvpResult]);
+  }, [recordPvpResult, startRematch]);
 
 
-  const rematch = useCallback(() => {
-    battleIdRef.current = createBattleId();
+  const rematch = useCallback(async () => {
+    if (pendingRematchRequestId.current) return;
 
-    dispatch({
-      t: "reset",
-      first: false,
-      myPower: myStatsRef.current.power,
-      opponentPower: opponentStatsRef.current.power,
-      myHP: myStatsRef.current.hp,
-      opponentHP: opponentStatsRef.current.hp,
-    });
+    const currentRelay = relay.current;
 
-    send({ type: "rematch" });
-  }, [send]);
+    if (!currentRelay) {
+      setRematchDialog({
+        type: "error",
+        message: "Your room connection is unavailable.",
+      });
+      return;
+    }
+
+    const requestId = createBattleId();
+    pendingRematchRequestId.current = requestId;
+    setRematchDialog({ type: "waiting" });
+
+    try {
+      await currentRelay.send({
+        type: "rematch-request",
+        requestId,
+      });
+    } catch (error) {
+      if (pendingRematchRequestId.current === requestId) {
+        pendingRematchRequestId.current = null;
+        setRematchDialog({
+          type: "error",
+          message: `Unable to request rematch: ${error.message}`,
+        });
+      }
+    }
+  }, []);
+
+  const respondToRematch = useCallback(async (accepted) => {
+    const requestId = acceptedRematchRequestId.current;
+    const currentRelay = relay.current;
+
+    if (!requestId || !currentRelay) return;
+
+    setRematchDialog(
+      accepted ? { type: "starting" } : null
+    );
+
+    try {
+      await currentRelay.send({
+        type: "rematch-response",
+        requestId,
+        accepted,
+      });
+
+      if (!accepted) {
+        acceptedRematchRequestId.current = null;
+      }
+    } catch (error) {
+      console.error("Unable to respond to PvP rematch:", error);
+      setRematchDialog({
+        type: "error",
+        message: `Unable to respond to rematch: ${error.message}`,
+      });
+    }
+  }, []);
+
+  const dismissRematchDialog = useCallback(() => {
+    setRematchDialog((current) =>
+      current?.type === "declined" || current?.type === "error"
+        ? null
+        : current
+    );
+  }, []);
 
   return {
     phase,
@@ -462,6 +650,12 @@ export function usePvpSession() {
     send,
     leave,
     surrender,
+    surrenderPromptVisible,
+    cancelSurrender,
+    confirmSurrender,
     rematch,
+    rematchDialog,
+    respondToRematch,
+    dismissRematchDialog,
   };
 }

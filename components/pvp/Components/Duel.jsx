@@ -187,6 +187,16 @@ const handleOpponentAttackComplete = () => {
 
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
+      <Pressable
+        style={st.exitBtn}
+        onPress={surrender}
+        accessibilityRole="button"
+        accessibilityLabel="Exit duel and surrender"
+        hitSlop={8}
+      >
+        <Text style={st.exitBtnText}>X</Text>
+      </Pressable>
+
       {/* Opponent area */}
       <ImageBackground
         source={require("../../../assets/images/duelBG.png")}
