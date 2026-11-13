@@ -109,7 +109,7 @@ export function reducer(s, a) {
   };
 
   if (card.dmg) {
-    const totalDamage = card.dmg * me.power;
+    const totalDamage = Math.round(card.dmg * me.power);
 
     const soak = Math.min(foeS.sh, totalDamage);
 
@@ -125,11 +125,11 @@ export function reducer(s, a) {
   }
 
   if (card.sh) {
-    me.sh += card.sh * me.maxHp;
+    me.sh += Math.round(card.sh * me.maxHp);
   }
 
   if (card.heal) {
-    me.hp = Math.min(me.maxHp, me.hp + card.heal * me.maxHp);
+    me.hp = Math.min(me.maxHp, me.hp + Math.round(card.heal * me.maxHp));
   }
 
   const target = card.dmg ? foe : who;
