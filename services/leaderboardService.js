@@ -1,6 +1,16 @@
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 
 import { auth, db } from "./firebaseConfig";
+
+const USERS_COLLECTION = "users";
+const LEADERBOARDS_COLLECTION = "leaderboards";
 
 const LEADERBOARD_FIELDS = {
   overall: {
@@ -23,6 +33,20 @@ const LEADERBOARD_FIELDS = {
 const getNonNegativeNumber = (value) => {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : 0;
+};
+
+const getGradeValue = (studentData) => {
+  const grade =
+    studentData.profile?.grade ??
+    studentData.profile?.gradeLevel ??
+    studentData.gradeLevel ??
+    studentData.grade;
+
+  if (grade === null || grade === undefined || String(grade).trim() === "") {
+    throw new Error("Your student profile is missing a grade level.");
+  }
+
+  return grade;
 };
 
 const normalizePlayer = (documentSnapshot, mode) => {
@@ -49,11 +73,29 @@ const normalizePlayer = (documentSnapshot, mode) => {
 };
 
 const getLeaderboard = async (mode) => {
-  if (!auth.currentUser) {
+  const uid = auth.currentUser?.uid;
+
+  if (!uid) {
     throw new Error("Sign in to view the leaderboard.");
   }
 
-  const snapshot = await getDocs(collection(db, "leaderboards"));
+  const currentStudentSnapshot = await getDoc(
+    doc(db, USERS_COLLECTION, uid)
+  );
+
+  if (!currentStudentSnapshot.exists()) {
+    throw new Error("Student profile not found.");
+  }
+
+  const gradeValue = getGradeValue(currentStudentSnapshot.data());
+  const gradeLevel = String(gradeValue).trim();
+  const snapshot = await getDocs(
+    query(
+      collection(db, LEADERBOARDS_COLLECTION),
+      where("gradeLevel", "==", gradeLevel)
+    )
+  );
+
   const players = snapshot.docs
     .map((playerSnapshot) => normalizePlayer(playerSnapshot, mode))
     .filter(Boolean)
@@ -64,10 +106,13 @@ const getLeaderboard = async (mode) => {
         first.username.localeCompare(second.username)
     );
 
-  return players.map((player, index) => ({
-    ...player,
-    rank: index + 1,
-  }));
+  return {
+    gradeLevel,
+    leaderboard: players.map((player, index) => ({
+      ...player,
+      rank: index + 1,
+    })),
+  };
 };
 
 export const getOverallLeaderboard = () => getLeaderboard("overall");

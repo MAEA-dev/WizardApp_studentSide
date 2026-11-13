@@ -19,14 +19,8 @@ const MODES = [
 ];
 
 export default function LeaderboardScreen() {
-  const {
-    leaderboard,
-    loading,
-    error,
-    refresh,
-    mode,
-    setMode,
-  } = useLeaderboard();
+  const { leaderboard, gradeLevel, loading, error, refresh, mode, setMode } =
+    useLeaderboard();
 
   return (
     <View style={styles.screen}>
@@ -35,7 +29,11 @@ export default function LeaderboardScreen() {
           <Ionicons name="trophy" size={26} color="#FFD86B" />
           <Text style={styles.heading}>Leaderboard</Text>
         </View>
-        <Text style={styles.subtitle}>The strongest wizards rise here.</Text>
+        <Text style={styles.subtitle}>
+          {gradeLevel
+            ? `Grade ${gradeLevel} rankings · The strongest wizards rise here.`
+            : "The strongest wizards rise here."}
+        </Text>
       </View>
 
       <View style={styles.modeTabs}>
@@ -91,8 +89,9 @@ export default function LeaderboardScreen() {
             <Ionicons name="sparkles-outline" size={32} color="#FFD86B" />
             <Text style={styles.messageTitle}>No rankings yet</Text>
             <Text style={styles.messageText}>
-              Finish a {mode === "overall" ? "battle" : `${mode.toUpperCase()} battle`} to
-              claim the first place.
+              Finish a{" "}
+              {mode === "overall" ? "battle" : `${mode.toUpperCase()} battle`}{" "}
+              to claim the first place.
             </Text>
           </View>
         ) : (

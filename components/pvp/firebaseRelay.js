@@ -55,8 +55,7 @@ export async function connectToRoom(room, callbacks) {
   const roomRef = ref(rtdb, `${ROOMS_PATH}/${roomKey}`);
   const roomMovesRef = ref(rtdb, `${MOVES_PATH}/${roomKey}`);
 
-  const sessionMovesRef = (id) =>
-    ref(rtdb, `${MOVES_PATH}/${roomKey}/${id}`);
+  const sessionMovesRef = (id) => ref(rtdb, `${MOVES_PATH}/${roomKey}/${id}`);
 
   const playerId = createId();
   const avatarId = getWizardAvatarId(callbacks.avatarId);
@@ -79,9 +78,7 @@ export async function connectToRoom(room, callbacks) {
     const data = current || {};
     const players = data.players || {};
 
-    slot = PLAYER_SLOTS.find(
-      (playerSlot) => !players[playerSlot]
-    );
+    slot = PLAYER_SLOTS.find((playerSlot) => !players[playerSlot]);
 
     if (!slot) {
       joinError = new Error("That room already has two wizards.");
@@ -92,9 +89,7 @@ export async function connectToRoom(room, callbacks) {
     const playerCount = Object.keys(players).length;
 
     const startNewSession =
-      !current ||
-      playerCount === 0 ||
-      (data.paired && playerCount === 1);
+      !current || playerCount === 0 || (data.paired && playerCount === 1);
 
     sessionId = startNewSession ? createId() : data.sessionId;
 
@@ -126,10 +121,7 @@ export async function connectToRoom(room, callbacks) {
     throw new Error("Unable to join the room. Please try again.");
   }
 
-  const slotRef = ref(
-    rtdb,
-    `${ROOMS_PATH}/${roomKey}/players/${slot}`
-  );
+  const slotRef = ref(rtdb, `${ROOMS_PATH}/${roomKey}/players/${slot}`);
 
   let closed = false;
   let leaving = false;
@@ -158,11 +150,7 @@ export async function connectToRoom(room, callbacks) {
   };
 
   const reportError = (reason) => {
-    if (
-      closed ||
-      leaving ||
-      surrenderReceived
-    ) {
+    if (closed || leaving || surrenderReceived) {
       return;
     }
 
@@ -176,20 +164,13 @@ export async function connectToRoom(room, callbacks) {
   connectedUnsubscribe = onValue(
     ref(rtdb, ".info/connected"),
     (snapshot) => {
-      if (
-        closed ||
-        leaving ||
-        surrenderReceived ||
-        snapshot.val() !== true
-      ) {
+      if (closed || leaving || surrenderReceived || snapshot.val() !== true) {
         return;
       }
 
-      onDisconnect(slotRef)
-        .remove()
-        .catch(reportError);
+      onDisconnect(slotRef).remove().catch(reportError);
     },
-    reportError
+    reportError,
   );
 
   const subscribeToMoves = (currentSessionId) => {
@@ -208,7 +189,7 @@ export async function connectToRoom(room, callbacks) {
           callbacks.onMove?.(move);
         }
       },
-      reportError
+      reportError,
     );
   };
 
@@ -232,17 +213,11 @@ export async function connectToRoom(room, callbacks) {
 
       if (roomEmptied) {
         await remove(roomMovesRef).catch((error) => {
-          console.warn(
-            "PvP move cleanup warning:",
-            error
-          );
+          console.warn("PvP move cleanup warning:", error);
         });
       }
     } catch (error) {
-      console.warn(
-        "PvP surrender acknowledgement warning:",
-        error
-      );
+      console.warn("PvP surrender acknowledgement warning:", error);
     }
   };
 
@@ -251,26 +226,16 @@ export async function connectToRoom(room, callbacks) {
   roomUnsubscribe = onValue(
     roomRef,
     (snapshot) => {
-      if (
-        closed ||
-        leaving ||
-        surrenderReceived
-      ) {
+      if (closed || leaving || surrenderReceived) {
         return;
       }
 
       if (!snapshot.exists()) {
-        if (
-          closed ||
-          leaving ||
-          surrenderReceived
-        ) {
+        if (closed || leaving || surrenderReceived) {
           return;
         }
 
-        reportError(
-          new Error("You were disconnected from the room.")
-        );
+        reportError(new Error("You were disconnected from the room."));
 
         return;
       }
@@ -300,8 +265,7 @@ export async function connectToRoom(room, callbacks) {
           callbacks.onSurrender?.({
             username: surrender.username,
 
-            acknowledge: () =>
-              acknowledgeSurrender(surrender.eventId),
+            acknowledge: () => acknowledgeSurrender(surrender.eventId),
           });
 
           return;
@@ -311,19 +275,14 @@ export async function connectToRoom(room, callbacks) {
       // ---------- verify room membership ----------
 
       if (latestPlayers[slot]?.id !== playerId) {
-        reportError(
-          new Error("You were disconnected from the room.")
-        );
+        reportError(new Error("You were disconnected from the room."));
 
         return;
       }
 
       // ---------- detect new battle session ----------
 
-      if (
-        nextSessionId &&
-        nextSessionId !== activeSessionId
-      ) {
+      if (nextSessionId && nextSessionId !== activeSessionId) {
         activeSessionId = nextSessionId;
         started = false;
 
@@ -336,21 +295,18 @@ export async function connectToRoom(room, callbacks) {
 
       // ---------- opponent information ----------
 
-      const rivalSlot = PLAYER_SLOTS.find(
-        (playerSlot) => playerSlot !== slot
-      );
+      const rivalSlot = PLAYER_SLOTS.find((playerSlot) => playerSlot !== slot);
 
       const rival = latestPlayers[rivalSlot];
 
       const rivalActive = Boolean(rival);
 
       const rivalAvatarId = getWizardAvatarId(
-        rival?.avatarId || DEFAULT_WIZARD_AVATAR
+        rival?.avatarId || DEFAULT_WIZARD_AVATAR,
       );
 
       const rivalUsername =
-        typeof rival?.username === "string" &&
-        rival.username.trim()
+        typeof rival?.username === "string" && rival.username.trim()
           ? rival.username.trim()
           : "Opponent";
 
@@ -382,16 +338,14 @@ export async function connectToRoom(room, callbacks) {
         });
       }
     },
-    reportError
+    reportError,
   );
 
   // ---------- send move ----------
 
   const send = async (move) => {
     if (closed || leaving || surrenderReceived) {
-      throw new Error(
-        "You are no longer connected to this room."
-      );
+      throw new Error("You are no longer connected to this room.");
     }
 
     const rematchTypes = [
@@ -400,9 +354,7 @@ export async function connectToRoom(room, callbacks) {
       "rematch-start",
     ];
 
-    if (
-      !["play", "end", "rematch", ...rematchTypes].includes(move?.type)
-    ) {
+    if (!["play", "end", "rematch", ...rematchTypes].includes(move?.type)) {
       throw new Error("Unsupported PvP move.");
     }
 
@@ -479,10 +431,7 @@ export async function connectToRoom(room, callbacks) {
 
     if (shouldClearMoves) {
       await remove(roomMovesRef).catch((error) => {
-        console.error(
-          "Unable to clear PvP moves:",
-          error
-        );
+        console.error("Unable to clear PvP moves:", error);
       });
     }
   };
@@ -491,9 +440,7 @@ export async function connectToRoom(room, callbacks) {
 
   const surrender = async () => {
     if (closed || leaving) {
-      throw new Error(
-        "You are no longer connected to this room."
-      );
+      throw new Error("You are no longer connected to this room.");
     }
 
     leaving = true;
@@ -514,8 +461,7 @@ export async function connectToRoom(room, callbacks) {
         failure = null;
 
         if (current.players?.[slot]?.id !== playerId) {
-          failure =
-            "You are no longer a member of this battle room.";
+          failure = "You are no longer a member of this battle room.";
 
           return;
         }
@@ -539,9 +485,7 @@ export async function connectToRoom(room, callbacks) {
       });
 
       if (!roomSeen) {
-        throw new Error(
-          "The battle room is no longer available."
-        );
+        throw new Error("The battle room is no longer available.");
       }
 
       if (failure) {
@@ -557,16 +501,11 @@ export async function connectToRoom(room, callbacks) {
     stopListeners();
 
     try {
-      await remove(
-        sessionMovesRef(surrenderedSessionId)
-      );
+      await remove(sessionMovesRef(surrenderedSessionId));
 
       return true;
     } catch (error) {
-      console.warn(
-        "Unable to clear surrendered PvP battle data:",
-        error
-      );
+      console.warn("Unable to clear surrendered PvP battle data:", error);
 
       return false;
     }

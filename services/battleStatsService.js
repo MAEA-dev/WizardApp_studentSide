@@ -202,11 +202,21 @@ export const recordBattleResult = async ({
       typeof studentData.username === "string" && studentData.username.trim()
         ? studentData.username.trim()
         : "Wizard";
+    const gradeValue =
+      studentData.profile?.grade ??
+      studentData.profile?.gradeLevel ??
+      studentData.gradeLevel ??
+      studentData.grade;
+    const gradeLevel =
+      gradeValue === null || gradeValue === undefined
+        ? ""
+        : String(gradeValue).trim();
     const overall = nextStats.overall;
 
     transaction.update(studentRef, updates);
     transaction.set(leaderboardRef, {
       username,
+      ...(gradeLevel ? { gradeLevel } : {}),
       overallWins: overall.wins,
       overallLosses: overall.losses,
       overallWinRate: overall.winRate,

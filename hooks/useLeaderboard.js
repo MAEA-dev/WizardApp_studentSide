@@ -9,6 +9,7 @@ import {
 export const useLeaderboard = () => {
   const [mode, setMode] = useState("overall");
   const [leaderboard, setLeaderboard] = useState([]);
+  const [gradeLevel, setGradeLevel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const requestIdRef = useRef(0);
@@ -25,12 +26,14 @@ export const useLeaderboard = () => {
 
       const results = await getLeaderboardForMode(selectedMode);
       if (requestId === requestIdRef.current) {
-        setLeaderboard(results);
+        setLeaderboard(results.leaderboard);
+        setGradeLevel(results.gradeLevel);
       }
     } catch (loadError) {
       console.error("Load leaderboard error:", loadError);
       if (requestId === requestIdRef.current) {
         setLeaderboard([]);
+        setGradeLevel(null);
         setError(loadError?.message || "Failed to load the leaderboard.");
       }
     } finally {
@@ -61,6 +64,7 @@ export const useLeaderboard = () => {
 
   return {
     leaderboard,
+    gradeLevel,
     loading,
     error,
     refresh,
