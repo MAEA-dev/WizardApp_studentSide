@@ -18,6 +18,7 @@ export function SpellCard({
   onPlay,
   compact = false,
   power = 0,
+  style: cardStyle,
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
@@ -67,6 +68,7 @@ export function SpellCard({
       onPressOut={() => setPressed(false)}
       style={[
         styles.card,
+        cardStyle,
         {
           borderColor: card.color,
           opacity: enabled ? 1 : 0.4,

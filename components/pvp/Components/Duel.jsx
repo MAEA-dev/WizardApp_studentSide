@@ -254,56 +254,48 @@ const handleOpponentAttackComplete = () => {
           {s.log}
         </Text>
 
-        <Pressable
-          disabled={s.turn !== "me" || over}
-          style={[
-            st.endBtn,
-            (s.turn !== "me" || over) && {
-              opacity: 0.35,
-            },
-          ]}
-          onPress={() => {
-            dispatch({ t: "end", who: "me" });
-            send({ type: "end" });
-          }}
-        >
-          <Text style={st.btnTxt}>
-            {s.turn === "me"
-              ? "End turn"
-              : "Rival's turn…"}
-          </Text>
-        </Pressable>
       </View>
 
-      {/* Your HP and stats */}
-      <View
-        style={[
-          st.mine,
-          {
-            flex: 0.8,
-            minHeight: 0,
-            marginTop: 10,
-          },
-        ]}
-      >
-        <Stats
-          p={s.me}
-          label="You"
-          align="flex-start"
-          hits={s.hits.me}
-          manaUses={s.manaUses.me}
+      <View style={st.mineAndBook}>
+        {/* Your HP and stats */}
+        <View style={st.mine}>
+          <Stats
+            p={s.me}
+            label="You"
+            align="flex-start"
+            hits={s.hits.me}
+            manaUses={s.manaUses.me}
+          />
+        </View>
+
+        {/* Spellbook handles its own shake */}
+        <Book
+          s={s}
+          shakeHits={bookShakeHits}
+          onPlay={(id) => {
+            dispatch({ t: "play", who: "me", id });
+            send({ type: "play", id });
+          }}
         />
       </View>
 
-      {/* Spellbook handles its own shake */}
-      <Book
-        s={s}
-        shakeHits={bookShakeHits}
-        onPlay={(id) => {
-          dispatch({ t: "play", who: "me", id });
-          send({ type: "play", id });
+      <Pressable
+        disabled={s.turn !== "me" || over}
+        style={[
+          st.endBtn,
+          (s.turn !== "me" || over) && {
+            opacity: 0.35,
+          },
+        ]}
+        onPress={() => {
+          dispatch({ t: "end", who: "me" });
+          send({ type: "end" });
         }}
-      />
+      >
+        <Text style={[st.btnTxt, st.endBtnText]}>
+          {s.turn === "me" ? "END TURN" : "RIVAL'S TURN…"}
+        </Text>
+      </Pressable>
 
       {/* End game overlay */}
       {over && (

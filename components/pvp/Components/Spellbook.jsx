@@ -1,9 +1,8 @@
 
-import { useState } from "react";
 import {
+  ScrollView,
   View,
   Text,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
 } from "react-native";
@@ -19,15 +18,20 @@ export function Book({
   shakeHits = s.hits.me,
   onShakeComplete,
 }) {
-  const [page, setPage] = useState(0);
   const { width, height } = useWindowDimensions();
 
-  const pages = Math.ceil(CARDS.length / PER_PAGE);
   const mine = s.turn === "me" && s.me.hp > 0 && s.opp.hp > 0;
 
   const compact = height < 700 || width < 360;
 
   const bookWidth = Math.min(width - 16, 600);
+  const bookPadding = compact ? 6 : 10;
+  const rowPadding = compact ? 5 : 8;
+  const cardGap = compact ? 4 : 8;
+  const cardWidth =
+    (bookWidth - bookPadding * 2 - 6 - rowPadding * 2 - cardGap * 2) /
+      PER_PAGE +
+    4;
 
   const cardHeight = Math.min(
     Math.max(height * 0.23, 125),
@@ -47,33 +51,15 @@ export function Book({
           styles.book,
           {
             width: bookWidth,
-            padding: compact ? 6 : 10,
+            padding: bookPadding,
           },
         ]}
       >
         {/* Book header */}
         <View style={styles.bookHead}>
-          <Pressable
-            onPress={() => setPage((p) => (p + pages - 1) % pages)}
-            hitSlop={12}
-          >
-            <Text style={[styles.flip, compact && styles.compactFlip]}>
-              ‹
-            </Text>
-          </Pressable>
-
           <Text style={[styles.bookTitle, compact && styles.compactTitle]}>
-            Spellbook · page {page + 1} of {pages}
+            Spellbook
           </Text>
-
-          <Pressable
-            onPress={() => setPage((p) => (p + 1) % pages)}
-            hitSlop={12}
-          >
-            <Text style={[styles.flip, compact && styles.compactFlip]}>
-              ›
-            </Text>
-          </Pressable>
         </View>
 
         {/* Spell cards */}
@@ -82,13 +68,17 @@ export function Book({
             styles.pageRow,
             {
               height: cardHeight,
-              gap: compact ? 4 : 8,
-              padding: compact ? 5 : 8,
+              padding: rowPadding,
             },
           ]}
         >
-          {CARDS.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE).map(
-            (card) => {
+          <ScrollView
+            horizontal
+            style={styles.cardScroll}
+            showsHorizontalScrollIndicator
+            contentContainerStyle={[styles.cardList, { gap: cardGap }]}
+          >
+            {CARDS.map((card) => {
               const enabled = mine && s.me.mana >= card.cost;
 
               return (
@@ -99,10 +89,11 @@ export function Book({
                   onPlay={onPlay}
                   compact={compact}
                   power={playerPower}
+                  style={{ width: cardWidth, flex: 0 }}
                 />
               );
-            }
-          )}
+            })}
+          </ScrollView>
         </View>
       </View>
     </HitShake>
@@ -111,9 +102,7 @@ export function Book({
 
 const styles = StyleSheet.create({
   bookWrap: {
-    flex: 7,
-    flexShrink: 1,
-    minHeight: 0,
+    flexShrink: 0,
     paddingHorizontal: 4,
     paddingBottom: 6,
     justifyContent: "flex-end",
@@ -136,7 +125,7 @@ const styles = StyleSheet.create({
 
   bookHead: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 6,
     paddingBottom: 6,
@@ -153,23 +142,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
-  flip: {
-    color: C.gold,
-    fontSize: 30,
-    paddingHorizontal: 10,
-  },
-
-  compactFlip: {
-    fontSize: 23,
-    paddingHorizontal: 5,
-  },
-
   pageRow: {
     width: "100%",
     flexDirection: "row",
     alignItems: "stretch",
-    justifyContent: "center",
     backgroundColor: C.page,
     borderRadius: 8,
+    overflow: "hidden",
+  },
+
+  cardList: {
+    flexGrow: 1,
+    alignItems: "stretch",
+  },
+
+  cardScroll: {
+    flex: 1,
   },
 });

@@ -170,16 +170,16 @@ export const st = StyleSheet.create({
     fontWeight: "800",
   },
 
-top: {
-  height: 280,
-  width: "100%",
-  flexGrow: 0,
-  flexShrink: 0,
-  alignItems: "center",
-  paddingTop: 10,
-  paddingHorizontal: 40,
-  overflow: "hidden",
-},
+  top: {
+    height: 280,
+    width: "100%",
+    flexGrow: 0,
+    flexShrink: 0,
+    alignItems: "center",
+    paddingTop: 10,
+    paddingHorizontal: 40,
+    overflow: "hidden",
+  },
 
   mid: {
     alignItems: "center",
@@ -195,16 +195,34 @@ top: {
   },
 
   endBtn: {
+    borderWidth: 3,
+    borderColor: C.leatherLo,
     backgroundColor: C.gold,
-    paddingVertical: 8,
-    paddingHorizontal: 22,
+    paddingVertical: 12,
+    paddingHorizontal: 33,
     borderRadius: 20,
-  
+    alignSelf: "center",
+    transform: [{ translateY: -20 }],
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 7 },
+  },
+
+  endBtnText: {
+    fontSize: 24,
   },
 
   mine: {
     paddingHorizontal: 20,
-    paddingBottom: 6,
+  },
+
+  mineAndBook: {
+    flex: 7,
+    minHeight: 0,
+    justifyContent: "flex-end",
+    gap: 10,
   },
 
   overlay: {
