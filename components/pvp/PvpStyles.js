@@ -192,6 +192,9 @@ export const st = StyleSheet.create({
     color: C.teal,
     fontSize: 15,
     fontWeight: "600",
+    width: "100%",
+    textAlign: "center",
+    paddingHorizontal: 12,
   },
 
   endBtn: {

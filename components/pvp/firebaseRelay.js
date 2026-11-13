@@ -121,8 +121,6 @@ export async function connectToRoom(room, callbacks) {
     throw new Error("Unable to join the room. Please try again.");
   }
 
-  const slotRef = ref(rtdb, `${ROOMS_PATH}/${roomKey}/players/${slot}`);
-
   let closed = false;
   let leaving = false;
   let started = false;
@@ -135,18 +133,25 @@ export async function connectToRoom(room, callbacks) {
   let roomUnsubscribe = () => {};
   let movesUnsubscribe = () => {};
   let connectedUnsubscribe = () => {};
+  let disconnectActionQueue = Promise.resolve();
+  let wasConnected = false;
+  let disconnectedDuringBattle = false;
 
   let membershipRemoved = false;
   let lastSurrenderEventId = null;
+
+  const cancelDisconnectAction = () => {
+    disconnectActionQueue = disconnectActionQueue
+      .then(() => onDisconnect(roomRef).cancel())
+      .catch(() => {});
+  };
 
   const stopListeners = () => {
     roomUnsubscribe();
     movesUnsubscribe();
     connectedUnsubscribe();
 
-    onDisconnect(slotRef)
-      .cancel()
-      .catch(() => {});
+    cancelDisconnectAction();
   };
 
   const reportError = (reason) => {
@@ -161,14 +166,70 @@ export async function connectToRoom(room, callbacks) {
     callbacks.onError?.(asError(reason));
   };
 
-  connectedUnsubscribe = onValue(
-    ref(rtdb, ".info/connected"),
-    (snapshot) => {
-      if (closed || leaving || surrenderReceived || snapshot.val() !== true) {
+  const handleLocalDisconnectSurrender = () => {
+    if (closed || leaving || surrenderReceived) {
+      return;
+    }
+
+    surrenderReceived = true;
+    closed = true;
+
+    stopListeners();
+
+    callbacks.onDisconnectSurrender?.({ inBattle: started });
+  };
+
+  const armDisconnectAction = () => {
+    const update = started
+      ? {
+          surrender: {
+            eventId: createId(),
+            sessionId: activeSessionId,
+            playerId,
+            username,
+          },
+        }
+      : {
+          [`players/${slot}`]: null,
+        };
+
+    const registration = disconnectActionQueue.then(() => {
+      if (closed || leaving || surrenderReceived) {
         return;
       }
 
-      onDisconnect(slotRef).remove().catch(reportError);
+      return onDisconnect(roomRef).update(update);
+    });
+
+    disconnectActionQueue = registration.catch(reportError);
+    return disconnectActionQueue;
+  };
+
+  connectedUnsubscribe = onValue(
+    ref(rtdb, ".info/connected"),
+    (snapshot) => {
+      if (closed || leaving || surrenderReceived) {
+        return;
+      }
+
+      if (snapshot.val() !== true) {
+        if (wasConnected && started) {
+          disconnectedDuringBattle = true;
+        }
+
+        wasConnected = false;
+        return;
+      }
+
+      if (disconnectedDuringBattle && started) {
+        disconnectedDuringBattle = false;
+        handleLocalDisconnectSurrender();
+        return;
+      }
+
+      disconnectedDuringBattle = false;
+      wasConnected = true;
+      armDisconnectAction();
     },
     reportError,
   );
@@ -256,20 +317,23 @@ export async function connectToRoom(room, callbacks) {
       ) {
         lastSurrenderEventId = surrender.eventId;
 
-        if (surrender.playerId !== playerId) {
-          surrenderReceived = true;
-          closed = true;
+        surrenderReceived = true;
+        closed = true;
 
-          stopListeners();
+        stopListeners();
 
-          callbacks.onSurrender?.({
-            username: surrender.username,
-
-            acknowledge: () => acknowledgeSurrender(surrender.eventId),
-          });
-
+        if (surrender.playerId === playerId) {
+          callbacks.onDisconnectSurrender?.({ inBattle: started });
           return;
         }
+
+        callbacks.onSurrender?.({
+          username: surrender.username,
+
+          acknowledge: () => acknowledgeSurrender(surrender.eventId),
+        });
+
+        return;
       }
 
       // ---------- verify room membership ----------
@@ -286,6 +350,7 @@ export async function connectToRoom(room, callbacks) {
         activeSessionId = nextSessionId;
         started = false;
 
+        armDisconnectAction();
         subscribeToMoves(activeSessionId);
 
         callbacks.onWait?.({
@@ -321,17 +386,29 @@ export async function connectToRoom(room, callbacks) {
 
       if (rivalActive && !started) {
         started = true;
+        const sessionToStart = activeSessionId;
 
-        callbacks.onStart?.({
-          first: slot === "player1",
-          avatarId: rivalAvatarId,
-          username: rivalUsername,
+        armDisconnectAction().then(() => {
+          if (
+            closed ||
+            leaving ||
+            surrenderReceived ||
+            !started ||
+            activeSessionId !== sessionToStart
+          ) {
+            return;
+          }
 
-          // Pass opponent stats when the duel starts.
-          opponentStats: rivalStats,
+          callbacks.onStart?.({
+            first: slot === "player1",
+            avatarId: rivalAvatarId,
+            username: rivalUsername,
+            opponentStats: rivalStats,
+          });
         });
       } else if (!rivalActive && started) {
         started = false;
+        armDisconnectAction();
 
         callbacks.onWait?.({
           reconnecting: false,

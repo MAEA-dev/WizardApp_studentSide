@@ -421,6 +421,28 @@ export function usePvpSession() {
           });
         },
 
+        onDisconnectSurrender: ({ inBattle }) => {
+          if (inBattle) {
+            recordPvpResult("lost");
+          }
+
+          relay.current = null;
+          pendingRematchRequestId.current = null;
+          acceptedRematchRequestId.current = null;
+          setSurrenderPromptVisible(false);
+          setRematchDialog(null);
+          setOpponentAvatarId(DEFAULT_WIZARD_AVATAR);
+          setOpponentUsername("Opponent");
+          setOpponentStats(DEFAULT_STATS);
+          opponentStatsRef.current = DEFAULT_STATS;
+          setPhase("lobby");
+          setStatus(
+            inBattle
+              ? "You disconnected during the match and surrendered."
+              : "You disconnected from the room."
+          );
+        },
+
 
         onMove: (move) => {
           if (move.type === "play") {

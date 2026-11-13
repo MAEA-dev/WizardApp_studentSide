@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
+  Animated,
   Pressable,
   Text,
   View,
@@ -40,6 +41,9 @@ export function Duel({
   const [spellFlashKey, setSpellFlashKey] = useState(null);
 
   const [bookShakeHits, setBookShakeHits] = useState(0);
+
+  const moveNoticeOpacity = useRef(new Animated.Value(0)).current;
+  const moveNoticeScale = useRef(new Animated.Value(0.75)).current;
 
   const previousEffectKey = useRef(null);
   const pendingPlayerDamage = useRef(false);
@@ -135,6 +139,48 @@ export function Duel({
   const isHealing =
     lastEffect?.who === "me" &&
     lastEffect?.cardId === "heal";
+
+  const moveNoticeFontSize = Math.max(
+    13,
+    Math.min(width * 0.05, height * 0.035, 22)
+  );
+
+  useEffect(() => {
+    moveNoticeOpacity.stopAnimation();
+    moveNoticeScale.stopAnimation();
+    moveNoticeOpacity.setValue(0);
+    moveNoticeScale.setValue(0.75);
+
+    const animation = Animated.sequence([
+      Animated.parallel([
+        Animated.spring(moveNoticeScale, {
+          toValue: 1.08,
+          friction: 6,
+          tension: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(moveNoticeOpacity, {
+          toValue: 1,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(moveNoticeScale, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.delay(1000),
+      Animated.timing(moveNoticeOpacity, {
+        toValue: 0,
+        duration: 900,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start();
+    return () => animation.stop();
+  }, [s.log, lastEffect?.key, moveNoticeOpacity, moveNoticeScale]);
 
 
   useEffect(() => {
@@ -243,16 +289,27 @@ const handleOpponentAttackComplete = () => {
         style={[
           st.mid,
           {
-            flex: 1.1,
+            flex: 1,
             minHeight: 0,
             justifyContent: "center",
-            marginTop: 10,
           },
         ]}
       >
-        <Text style={st.log} numberOfLines={2}>
+        <Animated.Text
+          style={[
+            st.log,
+            {
+              fontSize: moveNoticeFontSize,
+              opacity: moveNoticeOpacity,
+              transform: [{ scale: moveNoticeScale }],
+            },
+          ]}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
           {s.log}
-        </Text>
+        </Animated.Text>
 
       </View>
 
