@@ -22,6 +22,8 @@ import {
   getAuthErrorMessage,
 } from "../../services/firebaseAuth";
 
+const isNameCharacter = /[\p{L}\p{M}\s]/u;
+
 const RegisterScreen = () => {
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
@@ -38,6 +40,21 @@ const RegisterScreen = () => {
 
   const [hidePassword, setHidePassword] = useState(true);
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
+
+  const handleNameChange = (value, setName, fieldName) => {
+    const sanitizedValue = Array.from(value)
+      .filter((character) => isNameCharacter.test(character))
+      .join("");
+
+    if (sanitizedValue !== value) {
+      Alert.alert(
+        "Invalid name",
+        `${fieldName} can only contain letters and spaces.`,
+      );
+    }
+
+    setName(sanitizedValue);
+  };
 
   const handleRegister = async () => {
     const cleanUsername = username.trim().toLowerCase();
@@ -72,6 +89,14 @@ const RegisterScreen = () => {
 
     if (!lastname.trim()) {
       Alert.alert("Missing field", "Please enter your last name.");
+      return;
+    }
+
+    if (
+      !/^[\p{L}\p{M}\s]+$/u.test(firstname.trim()) ||
+      !/^[\p{L}\p{M}\s]+$/u.test(lastname.trim())
+    ) {
+      Alert.alert("Invalid name", "Names can only contain letters and spaces.");
       return;
     }
 
@@ -181,7 +206,9 @@ const RegisterScreen = () => {
                   <Text style={styles.label}>First Name</Text>
                   <TextInput
                     value={firstname}
-                    onChangeText={setFirstname}
+                    onChangeText={(value) =>
+                      handleNameChange(value, setFirstname, "First name")
+                    }
                     placeholder="First name"
                     placeholderTextColor="#AFA4D8"
                     style={styles.input}
@@ -192,7 +219,9 @@ const RegisterScreen = () => {
                   <Text style={styles.label}>Last Name</Text>
                   <TextInput
                     value={lastname}
-                    onChangeText={setLastname}
+                    onChangeText={(value) =>
+                      handleNameChange(value, setLastname, "Last name")
+                    }
                     placeholder="Last name"
                     placeholderTextColor="#AFA4D8"
                     style={styles.input}
