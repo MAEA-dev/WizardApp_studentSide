@@ -7,13 +7,22 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 
-import React from "react";
+import React, { useState } from "react";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { signOut } from "firebase/auth";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  signOut,
+  updatePassword,
+} from "firebase/auth";
 
 import { Fonts } from "../../constants/Fonts";
 import { auth } from "../../services/firebaseConfig";
@@ -23,18 +32,17 @@ import { clearStudentLocalData } from "../../services/studentDataService";
 
 const profileMenuItems = [
   {
-    id: "switch-user",
-    title: "Switch User",
-    description: "Login using another student account",
-    icon: "swap-horizontal-outline",
-    type: "warning",
-  },
-  {
     id: "logout",
     title: "Logout",
     description: "Sign out from this account",
     icon: "log-out-outline",
     type: "danger",
+  },
+  {
+    id: "change-password",
+    title: "Change Password",
+    description: "Update your account password",
+    icon: "key-outline",
   },
 ];
 
@@ -53,6 +61,14 @@ const getStudentGrade = (student) => {
 
 const Profile = () => {
   const router = useRouter();
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const {
     student,
@@ -64,10 +80,84 @@ const Profile = () => {
 
   const isLoading = loadingCache ?? loading;
 
-  const username = student?.username || "Student";
+  const rawUsername = student?.username || "Student";
+  const username = rawUsername.replace(
+    /(^|\s)\S/g,
+    (character) => character.toUpperCase(),
+  );
   const fullName = getStudentName(student);
   const grade = getStudentGrade(student);
 
+  const openChangePassword = () => {
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+    setChangePasswordVisible(true);
+  };
+
+  const closeChangePassword = () => {
+    if (changingPassword) return;
+    setChangePasswordVisible(false);
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Missing field", "Please fill out all password fields.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert(
+        "Password mismatch",
+        "New password and confirm password don't match.",
+      );
+      return;
+    }
+
+    const user = auth.currentUser;
+
+    if (!user?.email) {
+      Alert.alert("Error", "Unable to verify your account. Please log in again.");
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const credential = EmailAuthProvider.credential(user.email, oldPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+
+      setChangePasswordVisible(false);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      Alert.alert("Success", "Your password has been changed.");
+    } catch (error) {
+      if (
+        error?.code === "auth/wrong-password" ||
+        error?.code === "auth/invalid-credential"
+      ) {
+        Alert.alert("Incorrect password", "The old password is incorrect.");
+      } else {
+        Alert.alert(
+          "Password change failed",
+          error?.message || "Please try again.",
+        );
+      }
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   const handleAuthExit = async () => {
     try {
@@ -79,23 +169,6 @@ const Profile = () => {
       console.log("Logout error:", err);
       Alert.alert("Error", err?.message || "Failed to logout.");
     }
-  };
-
-  const handleSwitchUser = () => {
-    Alert.alert(
-      "Switch User",
-      "Do you want to switch to another account?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Switch",
-          onPress: handleAuthExit,
-        },
-      ]
-    );
   };
 
   const handleLogout = () => {
@@ -118,12 +191,12 @@ const Profile = () => {
 
   const handleMenuPress = (item) => {
     switch (item.id) {
-      case "switch-user":
-        handleSwitchUser();
-        break;
-
       case "logout":
         handleLogout();
+        break;
+
+      case "change-password":
+        openChangePassword();
         break;
 
       default:
@@ -215,10 +288,107 @@ const Profile = () => {
             ))}
           </View>
         </ScrollView>
+
+        <Modal
+          visible={changePasswordVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeChangePassword}
+        >
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <View style={styles.passwordModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Change Password</Text>
+                <TouchableOpacity
+                  accessibilityLabel="Close change password"
+                  onPress={closeChangePassword}
+                  disabled={changingPassword}
+                >
+                  <Ionicons name="close" size={26} color="#D8CFFF" />
+                </TouchableOpacity>
+              </View>
+
+              <PasswordField
+                label="Old Password"
+                value={oldPassword}
+                onChangeText={setOldPassword}
+                hidden={!showOldPassword}
+                onToggleVisibility={() => setShowOldPassword(!showOldPassword)}
+              />
+              <PasswordField
+                label="New Password"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                hidden={!showNewPassword}
+                onToggleVisibility={() => setShowNewPassword(!showNewPassword)}
+              />
+              <PasswordField
+                label="Confirm Password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                hidden={!showConfirmPassword}
+                onToggleVisibility={() =>
+                  setShowConfirmPassword(!showConfirmPassword)
+                }
+              />
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[
+                  styles.confirmButton,
+                  changingPassword && styles.confirmButtonDisabled,
+                ]}
+                onPress={handleChangePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? (
+                  <ActivityIndicator color="#21103F" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
   
   );
 };
+
+const PasswordField = ({
+  label,
+  value,
+  onChangeText,
+  hidden,
+  onToggleVisibility,
+}) => (
+  <View style={styles.passwordField}>
+    <Text style={styles.passwordLabel}>{label}</Text>
+    <View style={styles.passwordInputContainer}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={hidden}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={styles.passwordInput}
+      />
+      <TouchableOpacity
+        accessibilityLabel={hidden ? `Show ${label}` : `Hide ${label}`}
+        onPress={onToggleVisibility}
+      >
+        <Ionicons
+          name={hidden ? "eye-off-outline" : "eye-outline"}
+          size={22}
+          color="#FFD86B"
+        />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
 
 const ProfileMenuItem = ({ item, onPress }) => {
   const isDanger = item.type === "danger";
@@ -498,5 +668,86 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 12,
     color: "#D8CFFF",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    backgroundColor: "rgba(10, 5, 24, 0.78)",
+  },
+
+  passwordModal: {
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: "#24164A",
+    borderWidth: 2,
+    borderColor: "#FFD86B",
+    borderRadius: 24,
+    padding: 22,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+
+  modalTitle: {
+    fontFamily: Fonts.heading,
+    fontSize: 21,
+    color: "#FFD86B",
+  },
+
+  passwordField: {
+    marginBottom: 14,
+  },
+
+  passwordLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 13,
+    color: "#FFFFFF",
+    marginBottom: 7,
+  },
+
+  passwordInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 2,
+    borderColor: "#BFA7FF",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+  },
+
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    color: "#FFFFFF",
+    fontFamily: Fonts.body,
+    fontSize: 15,
+  },
+
+  confirmButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 50,
+    marginTop: 8,
+    backgroundColor: "#FFD86B",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    borderRadius: 14,
+  },
+
+  confirmButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  confirmButtonText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 15,
+    color: "#21103F",
   },
 });
