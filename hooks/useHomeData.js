@@ -33,13 +33,6 @@ const buildStats = (student) => {
       icon: "⚡",
       type: "power",
     },
-    {
-      id: "energy",
-      label: "ENERGY",
-      value: student?.energy ?? 0,
-      icon: "🔋",
-      type: "energy",
-    },
   ];
 };
 

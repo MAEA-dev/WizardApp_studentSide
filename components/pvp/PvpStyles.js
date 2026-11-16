@@ -27,29 +27,61 @@ export const st = StyleSheet.create({
     gap: 8,
   },
 
+  lobbyBackground: {
+    flex: 1,
+    width: "100%",
+  },
+
+  lobbyBackgroundImage: {
+    opacity: 0.35,
+  },
+
+  lobbyBackdrop: {
+    backgroundColor: "rgba(14, 8, 37, 0.34)",
+  },
+
   logo: {
     color: C.gold,
+    fontSize: 24,
+    fontFamily: Fonts.heading,
+    textAlign: "center",
+  },
+
+  waitingTitle: {
+    color: C.gold,
+    fontSize: 34,
+    fontFamily: Fonts.heading,
+    textAlign: "center",
+  },
+
+  lobbyLogo: {
+    color: C.gold,
     fontSize: 40,
-    fontWeight: "800",
+    fontWeight: "900",
     fontFamily: "serif",
     textAlign: "center",
   },
 
   sub: {
-    color: "#b9b0dd",
+    color: "#a796eb",
     textAlign: "center",
     marginBottom: 16,
     fontSize: 16,
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+   textShadowOffset: { width: 2, height: 3 },
+   textShadowRadius: 4,
   },
 
   label: {
     color: "#b9b0dd",
+    fontFamily: Fonts.bodyBold,
     marginTop: 8,
   },
 
   input: {
     backgroundColor: C.dusk,
     color: "#fff",
+    fontFamily: Fonts.body,
     borderRadius: 10,
     padding: 12,
     fontSize: 16,
@@ -80,14 +112,22 @@ export const st = StyleSheet.create({
 
   btnTxt: {
     color: C.ink,
-    fontWeight: "800",
+    fontFamily: Fonts.bodyBold,
     fontSize: 16,
   },
 
   status: {
     color: "#ff9b86",
+    fontFamily: Fonts.bodyBold,
     textAlign: "center",
     marginTop: 12,
+  },
+
+  waitingRoomName: {
+    color: C.gold,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 16,
+    textAlign: "center",
   },
 
   exitBtn: {

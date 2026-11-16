@@ -10,11 +10,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useBattleSystem } from "../../hooks/useBattleSystem";
 import { useHomeData } from "../../hooks/useHomeData";
-import { getBattleQuestionsByGrade } from "../../services/battleService";
+import { getDungeonQuestionsByDifficulty } from "../../services/battleService";
+import { getStageDifficulty } from "../../data/dungeonDifficulty";
 import { Fonts } from "../../constants/Fonts";
 import { getWizardAvatar } from "../../constants/wizardAvatars";
 
@@ -25,25 +26,13 @@ import BattleStage from "./BattleStage";
 import MessageBox from "./MessageBox";
 import QuestionCard from "./QuestionCard";
 
-const getStudentGradeLevel = (student) => {
-  return (
-    student?.profile?.grade ||
-    student?.profile?.gradeLevel ||
-    student?.gradeLevel ||
-    student?.grade ||
-    ""
-  );
-};
-
 const buildWizardStats = (student) => {
   const hp = Number(student?.hp || 100);
   const power = Number(student?.power || 20);
-  const energy = Number(student?.energy || 0);
 
   return {
     maxHp: Math.max(hp, 1),
     attack: Math.max(power, 1),
-    energy,
   };
 };
 
@@ -56,34 +45,36 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
 
   const [questions, setQuestions] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [questionsError, setQuestionsError] = useState(null);
   const [stageProgressError, setStageProgressError] = useState(null);
   const [stageReward, setStageReward] = useState(null);
   const [surrenderModalVisible, setSurrenderModalVisible] = useState(false);
   const stageProgressSavedRef = useRef(false);
   const stageProgressPromiseRef = useRef(null);
 
-  const gradeLevel = useMemo(() => {
-    return String(getStudentGradeLevel(student) || "").trim();
-  }, [student]);
+  const difficulty = getStageDifficulty(stage);
 
-  const wizardStats = useMemo(() => {
-    return buildWizardStats(student);
-  }, [student]);
+  // Freeze wizard stats once the student has loaded, so background updates
+  // (exp/level changes) can't restart or replace a battle in progress.
+  const [lockedStats, setLockedStats] = useState(null);
+
+  useEffect(() => {
+    if (!loadingCache && student && !lockedStats) {
+      setLockedStats(buildWizardStats(student));
+    }
+  }, [loadingCache, student, lockedStats]);
+
+  const wizardStats = lockedStats || buildWizardStats(student);
 
   useEffect(() => {
     let mounted = true;
 
     const loadQuestions = async () => {
-      if (!gradeLevel) {
-        setQuestions([]);
-        setLoadingQuestions(false);
-        return;
-      }
-
       try {
         setLoadingQuestions(true);
+        setQuestionsError(null);
 
-        const data = await getBattleQuestionsByGrade(gradeLevel);
+        const data = await getDungeonQuestionsByDifficulty(difficulty);
 
         if (mounted) {
           setQuestions(data);
@@ -92,8 +83,8 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
         console.log("Load battle questions error:", error);
 
         if (mounted) {
-          Alert.alert(
-            "Error",
+          setQuestions([]);
+          setQuestionsError(
             error?.message || "Failed to load battle questions."
           );
         }
@@ -109,7 +100,7 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
     return () => {
       mounted = false;
     };
-  }, [gradeLevel]);
+  }, [difficulty]);
 
   const {
     wizardHp,
@@ -145,6 +136,7 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
   } = useBattleSystem({
     questions,
     timeLimit: 15,
+    paused: surrenderModalVisible,
     wizard: {
       maxHp: wizardStats.maxHp,
       attack: wizardStats.attack,
@@ -234,7 +226,7 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
   const getResultTitle = () => {
     if (isVictory) return "Victory!";
     if (isDefeat) return "Defeated";
-    return "No Questions";
+    return questionsError ? "Load Failed" : "No Questions";
   };
 
   const getResultMessage = () => {
@@ -250,7 +242,10 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
       message =
         "The monster won this round. Train your magic and try again!";
     } else {
-      return "No published battle questions found for your grade level.";
+      if (questionsError) {
+        return `Could not load questions: ${questionsError}`;
+      }
+      return `No published ${difficulty} questions found for your grade level yet. Ask your teacher to publish a lesson.`;
     }
 
     const errors = [
@@ -272,21 +267,6 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingText}>Loading battle...</Text>
-      </View>
-    );
-  }
-
-  if (wizardStats.energy <= 0) {
-    return (
-      <View style={styles.container}>
-        <WizardMessage
-          visible
-          title="No Energy"
-          message="Your wizard has no energy. Restore energy before entering battle."
-          type="wrong"
-          buttonText="BACK"
-          onClose={onExitBattle}
-        />
       </View>
     );
   }
@@ -323,13 +303,13 @@ const BattleScreen = ({ onExitBattle, onStageComplete, stage }) => {
           <>
             <QuestionCard question={currentQuestion.question} />
 
-          <AnswerChoices
-             choices={currentQuestion.choices}
-                answer={currentQuestion.answer}
-                selectedAnswer={selectedAnswer}
-                isAnswerLocked={isAnswerLocked}
-                shouldRevealAnswer={shouldRevealAnswer}
-                onAnswerPress={handleAnswer}
+            <AnswerChoices
+              choices={currentQuestion.choices}
+              answer={currentQuestion.answer}
+              selectedAnswer={selectedAnswer}
+              isAnswerLocked={isAnswerLocked}
+              shouldRevealAnswer={shouldRevealAnswer}
+              onAnswerPress={handleAnswer}
             />
           </>
         )}

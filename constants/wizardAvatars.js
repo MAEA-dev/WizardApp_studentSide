@@ -36,7 +36,7 @@ export const WIZARD_AVATARS = {
     name: "Fire Mage",
     description: "A bold mage with a fiery spirit.",
     shop: {
-      price: 30,
+      price: 1500,
       image: require("../assets/images/fireMage.png"),
     },
 

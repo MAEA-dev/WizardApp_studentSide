@@ -1,4 +1,4 @@
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDocFromServer } from "firebase/firestore";
 
 import { auth, db } from "./firebaseConfig";
 import { updateLoginStreak } from "./dailyStreakService";
@@ -31,7 +31,7 @@ export const getStudentFromFirebase = async () => {
   const uid = requireStudentUid();
   const studentRef = getStudentRef(uid);
 
-  const snapshot = await getDoc(studentRef);
+  const snapshot = await getDocFromServer(studentRef);
 
   if (!snapshot.exists()) {
     throw new Error("Student data not found.");
@@ -72,16 +72,38 @@ export const syncStudentFromFirebase = async () => {
 };
 
 export const prepareStudentAfterLogin = async () => {
-  const student = await syncStudentFromFirebase();
+  let timeoutId;
+  const preparation = (async () => {
+    const student = await syncStudentFromFirebase();
 
-  if (!student) return student;
+    if (!student) return student;
+
+    return student;
+  })();
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const error = new Error(
+        "Connection is too slow. Check your internet and try logging in again."
+      );
+      error.code = "app/connection-timeout";
+      reject(error);
+    }, 12000);
+  });
 
   try {
-    const streakData = await updateLoginStreak();
-    return cacheAndReturnStudent({ ...student, ...streakData });
-  } catch (error) {
-    console.warn("Could not update daily login streak:", error);
-    return student;
+    const student = await Promise.race([preparation, timeout]);
+    if (!student) return student;
+
+    try {
+      const streakData = await updateLoginStreak();
+      return cacheAndReturnStudent({ ...student, ...streakData });
+    } catch (error) {
+      console.warn("Could not update daily login streak:", error);
+      return student;
+    }
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 

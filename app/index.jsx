@@ -1,4 +1,5 @@
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -9,10 +10,11 @@ import {
 
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import { Fonts } from "../constants/Fonts";
 import { auth } from "../services/firebaseConfig";
+import { prepareStudentAfterLogin } from "../services/studentDataService";
 import WizardMessageModal from "../components/shared/wizardMessageModal";
 
 export default function Index() {
@@ -23,23 +25,43 @@ export default function Index() {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
+    let active = true;
     const unsubscribe = onAuthStateChanged(
       auth,
-      (user) => {
+      async (user) => {
         if (user) {
-          router.replace("/(tabs)/home");
+          try {
+            await prepareStudentAfterLogin();
+            if (active) router.replace("/(tabs)/home");
+          } catch (error) {
+            const stillSignedIn = auth.currentUser?.uid === user.uid;
+            if (stillSignedIn) await signOut(auth).catch(() => {});
+            if (active) {
+              router.replace("/(auth)/loginScreen");
+              if (stillSignedIn) {
+                Alert.alert(
+                  "Connection required",
+                  error?.message ||
+                    "Connect to the internet before entering the app."
+                );
+              }
+            }
+          }
           return;
         }
 
-        setAuthChecking(false);
+        if (active) setAuthChecking(false);
       },
       (error) => {
         console.error("Firebase auth state error:", error);
-        setAuthChecking(false);
+        if (active) setAuthChecking(false);
       },
     );
 
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [router]);
 
   const tutorialMessages = [
@@ -68,7 +90,7 @@ export default function Index() {
     {
       title: "Wizard Stats",
       message:
-         "Your wizard has Power, HP, and Energy .\n\n ⚡ Power - makes your wizard stronger.\n❤️ HP - helps your wizard stay in the game longer.\n🔋 Energy - lets your wizard keep learning and doing activities.\n\nWhen your wizard levels up , all of these stats increase!",},
+         "Your wizard has Power, and HP .\n\n ⚡ Power - makes your wizard stronger.\n❤️ HP - helps your wizard stay in the game longer.\n\nWhen your wizard levels up , all of these stats increase!",},
     {
       title: "Ready to Begin?",
       message:

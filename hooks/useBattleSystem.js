@@ -24,22 +24,14 @@ const WIZARD_CAST_DELAY = 350;
 const MONSTER_CAST_DELAY = 300;
 const NEXT_QUESTION_DELAY = 1000;
 
+// Fisher-Yates (uniform shuffle)
 const shuffleArray = (array = []) => {
-  return [...array].sort(() => Math.random() - 0.5);
-};
-
-const getRandomQuestion = (questions = []) => {
-  if (!Array.isArray(questions) || questions.length === 0) {
-    return null;
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-
-  const randomIndex = Math.floor(Math.random() * questions.length);
-  const question = questions[randomIndex];
-
-  return {
-    ...question,
-    choices: shuffleArray(question.choices || []),
-  };
+  return copy;
 };
 
 const clampPercent = (value) => {
@@ -55,13 +47,24 @@ export const useBattleSystem = ({
   enemy = "Monster",
   wizardAttackEffect = "waterBlast",
   monsterAttackEffect = "poisonBlast",
+  paused = false,
 }) => {
   const nextQuestionTimeoutRef = useRef(null);
   const skillEffectTimeoutRef = useRef(null);
+  const animationTimeoutsRef = useRef([]);
   const battleIdRef = useRef(
     `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
   );
   const hasRecordedResultRef = useRef(false);
+
+  // Question "deck": every question is used once before any repeats
+  const deckRef = useRef([]);
+  const lastQuestionIdRef = useRef(null);
+
+  // Refs so damage math never depends on stale closures or state updaters
+  const wizardHpRef = useRef(0);
+  const monsterHpRef = useRef(0);
+  const answerLockedRef = useRef(false);
 
   const wizardMaxHp = Number(wizard?.maxHp || DEFAULT_WIZARD.maxHp);
   const wizardAttack = Number(wizard?.attack || DEFAULT_WIZARD.attack);
@@ -78,9 +81,7 @@ export const useBattleSystem = ({
   const [skillEffect, setSkillEffect] = useState(null);
   const [skillEffectTarget, setSkillEffectTarget] = useState("right");
 
-  const [currentQuestion, setCurrentQuestion] = useState(() =>
-    getRandomQuestion(questions)
-  );
+  const [currentQuestion, setCurrentQuestion] = useState(null);
 
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isAnswerLocked, setIsAnswerLocked] = useState(false);
@@ -96,10 +97,12 @@ export const useBattleSystem = ({
   const battleStatus = useMemo(() => {
     if (monsterHp <= 0) return "won";
     if (wizardHp <= 0) return "lost";
-    if (!currentQuestion) return "noQuestions";
+    // Based on the questions list, not currentQuestion, so there is no
+    // "No Questions" flash between loading and the first draw.
+    if (!Array.isArray(questions) || questions.length === 0) return "noQuestions";
 
     return "playing";
-  }, [monsterHp, wizardHp, currentQuestion]);
+  }, [monsterHp, wizardHp, questions]);
 
   const wizardHpPercent = useMemo(() => {
     if (wizardMaxHp <= 0) return 0;
@@ -125,10 +128,27 @@ export const useBattleSystem = ({
     }
   }, []);
 
+  const clearAnimationTimeouts = useCallback(() => {
+    animationTimeoutsRef.current.forEach(clearTimeout);
+    animationTimeoutsRef.current = [];
+  }, []);
+
   const clearBattleTimeouts = useCallback(() => {
     clearNextQuestionTimeout();
     clearSkillEffectTimeout();
-  }, [clearNextQuestionTimeout, clearSkillEffectTimeout]);
+    clearAnimationTimeouts();
+  }, [clearNextQuestionTimeout, clearSkillEffectTimeout, clearAnimationTimeouts]);
+
+  const runAfterDelay = useCallback((callback, delay) => {
+    const id = setTimeout(() => {
+      animationTimeoutsRef.current = animationTimeoutsRef.current.filter(
+        (timeoutId) => timeoutId !== id
+      );
+      callback();
+    }, delay);
+
+    animationTimeoutsRef.current.push(id);
+  }, []);
 
   const showSkillEffectAfterDelay = useCallback(
     ({ effectName, target, delay }) => {
@@ -142,62 +162,103 @@ export const useBattleSystem = ({
     [clearSkillEffectTimeout]
   );
 
-  const goToRandomQuestion = useCallback(() => {
-    setCurrentQuestion(getRandomQuestion(questions));
+  // Draws the next question from a shuffled deck (no repeats until all used,
+  // and never the same question twice in a row when the pool allows it).
+  const drawQuestion = useCallback(() => {
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return null;
+    }
+
+    if (deckRef.current.length === 0) {
+      const deck = shuffleArray(questions);
+
+      if (
+        deck.length > 1 &&
+        lastQuestionIdRef.current !== null &&
+        deck[0].id === lastQuestionIdRef.current
+      ) {
+        const swapIndex = deck.length - 1;
+        [deck[0], deck[swapIndex]] = [deck[swapIndex], deck[0]];
+      }
+
+      deckRef.current = deck;
+    }
+
+    const next = deckRef.current.shift();
+    lastQuestionIdRef.current = next.id ?? null;
+
+    return {
+      ...next,
+      choices: shuffleArray(next.choices || []),
+    };
+  }, [questions]);
+
+  const goToNextQuestion = useCallback(() => {
+    setCurrentQuestion(drawQuestion());
     setSelectedAnswer(null);
     setIsAnswerLocked(false);
+    answerLockedRef.current = false;
     setShouldRevealAnswer(false);
     setTimeLeft(timeLimit);
 
     setWizardAction("idle");
     setMonsterAction("idle");
     setSkillEffect(null);
-  }, [questions, timeLimit]);
+  }, [drawQuestion, timeLimit]);
 
   const scheduleNextQuestion = useCallback(() => {
     clearNextQuestionTimeout();
 
     nextQuestionTimeoutRef.current = setTimeout(() => {
-      goToRandomQuestion();
+      goToNextQuestion();
     }, NEXT_QUESTION_DELAY);
-  }, [clearNextQuestionTimeout, goToRandomQuestion]);
+  }, [clearNextQuestionTimeout, goToNextQuestion]);
 
-  const damageMonster = useCallback(() => {
-    setWizardAction("attack");
-    setMonsterAction("idle");
-    setSkillEffect(null);
+  const damageMonster = useCallback(
+    (replyText) => {
+      const nextHp = Math.max(monsterHpRef.current - wizardAttack, 0);
+      monsterHpRef.current = nextHp;
+      setMonsterHp(nextHp);
 
-    showSkillEffectAfterDelay({
-      effectName: wizardAttackEffect,
-      target: "right",
-      delay: WIZARD_CAST_DELAY,
-    });
+      setWizardAction("attack");
+      setMonsterAction("idle");
+      setSkillEffect(null);
 
-    setMonsterHp((currentHp) => {
-      const nextHp = Math.max(currentHp - wizardAttack, 0);
+      showSkillEffectAfterDelay({
+        effectName: wizardAttackEffect,
+        target: "right",
+        delay: WIZARD_CAST_DELAY,
+      });
 
-      setTimeout(() => {
-        if (nextHp <= 0) {
-          setMonsterAction("die");
-        } else {
-          setMonsterAction("hurt");
-        }
+      runAfterDelay(() => {
+        setMonsterAction(nextHp <= 0 ? "die" : "hurt");
       }, WIZARD_CAST_DELAY);
 
       if (nextHp <= 0) {
         setBattleMessage("Correct! Your wizard defeated the monster!");
-        return nextHp;
+        return;
       }
 
-      setBattleMessage("Correct! Your wizard cast a spell at the monster.");
+      setBattleMessage(
+        replyText || "Correct! Your wizard cast a spell at the monster."
+      );
       scheduleNextQuestion();
-
-      return nextHp;
-    });
-  }, [wizardAttack, wizardAttackEffect, scheduleNextQuestion, showSkillEffectAfterDelay]);
+    },
+    [
+      wizardAttack,
+      wizardAttackEffect,
+      scheduleNextQuestion,
+      showSkillEffectAfterDelay,
+      runAfterDelay,
+    ]
+  );
 
   const damageWizard = useCallback(
     (message) => {
+      const nextHp = Math.max(wizardHpRef.current - monsterAttack, 0);
+      wizardHpRef.current = nextHp;
+      setWizardHp(nextHp);
+
       setMonsterAction("attack");
       setWizardAction("idle");
       setSkillEffect(null);
@@ -208,42 +269,39 @@ export const useBattleSystem = ({
         delay: MONSTER_CAST_DELAY,
       });
 
-      setWizardHp((currentHp) => {
-        const nextHp = Math.max(currentHp - monsterAttack, 0);
+      runAfterDelay(() => {
+        setWizardAction(nextHp <= 0 ? "die" : "hurt");
+      }, MONSTER_CAST_DELAY);
 
-        setTimeout(() => {
-          if (nextHp <= 0) {
-            setWizardAction("die");
-          } else {
-            setWizardAction("hurt");
-          }
-        }, MONSTER_CAST_DELAY);
+      if (nextHp <= 0) {
+        setBattleMessage(message || "The monster defeated your wizard.");
+        return;
+      }
 
-        if (nextHp <= 0) {
-          setBattleMessage(message || "The monster defeated your wizard.");
-          return nextHp;
-        }
-
-        setBattleMessage(message || "The monster attacked your wizard.");
-        scheduleNextQuestion();
-
-        return nextHp;
-      });
+      setBattleMessage(message || "The monster attacked your wizard.");
+      scheduleNextQuestion();
     },
     [
       monsterAttack,
       monsterAttackEffect,
       scheduleNextQuestion,
       showSkillEffectAfterDelay,
+      runAfterDelay,
     ]
   );
 
   const handleAnswer = useCallback(
     (choice) => {
-      if (!currentQuestion || isAnswerLocked || battleStatus !== "playing") {
+      if (
+        !currentQuestion ||
+        answerLockedRef.current ||
+        isAnswerLocked ||
+        battleStatus !== "playing"
+      ) {
         return;
       }
 
+      answerLockedRef.current = true;
       setSelectedAnswer(choice);
       setIsAnswerLocked(true);
 
@@ -251,12 +309,15 @@ export const useBattleSystem = ({
 
       if (isCorrect) {
         setShouldRevealAnswer(true);
-        damageMonster();
+        damageMonster(currentQuestion.correctReply);
         return;
       }
 
       setShouldRevealAnswer(false);
-      damageWizard("Wrong answer! The monster attacked your wizard.");
+      damageWizard(
+        currentQuestion.wrongReply ||
+          "Wrong answer! The monster attacked your wizard."
+      );
     },
     [
       currentQuestion,
@@ -268,10 +329,16 @@ export const useBattleSystem = ({
   );
 
   const handleTimeOut = useCallback(() => {
-    if (!currentQuestion || isAnswerLocked || battleStatus !== "playing") {
+    if (
+      !currentQuestion ||
+      answerLockedRef.current ||
+      isAnswerLocked ||
+      battleStatus !== "playing"
+    ) {
       return;
     }
 
+    answerLockedRef.current = true;
     setSelectedAnswer(null);
     setIsAnswerLocked(true);
     setShouldRevealAnswer(true);
@@ -286,6 +353,12 @@ export const useBattleSystem = ({
     hasRecordedResultRef.current = false;
     setBattleRecordError(null);
 
+    deckRef.current = [];
+    lastQuestionIdRef.current = null;
+    answerLockedRef.current = false;
+
+    wizardHpRef.current = wizardMaxHp;
+    monsterHpRef.current = monsterMaxHp;
     setWizardHp(wizardMaxHp);
     setMonsterHp(monsterMaxHp);
 
@@ -295,7 +368,7 @@ export const useBattleSystem = ({
     setSkillEffect(null);
     setSkillEffectTarget("right");
 
-    setCurrentQuestion(getRandomQuestion(questions));
+    setCurrentQuestion(drawQuestion());
     setSelectedAnswer(null);
     setIsAnswerLocked(false);
     setShouldRevealAnswer(false);
@@ -313,6 +386,7 @@ export const useBattleSystem = ({
     monsterMaxHp,
     questions,
     timeLimit,
+    drawQuestion,
   ]);
 
   useEffect(() => {
@@ -343,7 +417,12 @@ export const useBattleSystem = ({
   }, [resetBattle]);
 
   useEffect(() => {
-    if (battleStatus !== "playing" || isAnswerLocked) {
+    if (
+      paused ||
+      battleStatus !== "playing" ||
+      isAnswerLocked ||
+      !currentQuestion
+    ) {
       return;
     }
 
@@ -357,7 +436,14 @@ export const useBattleSystem = ({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [timeLeft, battleStatus, isAnswerLocked, handleTimeOut]);
+  }, [
+    paused,
+    timeLeft,
+    battleStatus,
+    isAnswerLocked,
+    currentQuestion,
+    handleTimeOut,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -392,6 +478,7 @@ export const useBattleSystem = ({
 
     battleMessage,
     battleStatus,
+    battleRecordError,
 
     handleAnswer,
     resetBattle,

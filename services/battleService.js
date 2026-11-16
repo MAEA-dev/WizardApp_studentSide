@@ -5,8 +5,16 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import { getApp } from "firebase/app";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 import { db } from "./firebaseConfig";
+
+
+// getDungeonBattleQuestions uses the default Cloud Functions region
+// (us-central1), so the callable client must target the same region.
+const FUNCTIONS_REGION = "us-central1";
+const VALID_DIFFICULTIES = ["easy", "medium", "hard"];
 
 const shuffleArray = (array = []) => {
   return [...array].sort(() => Math.random() - 0.5);
@@ -41,6 +49,26 @@ const normalizeQuestion = ({ question, parentData, parentId, index }) => {
     gradeLevel: parentData.gradeLevel || "",
   };
 };
+
+
+export const getDungeonQuestionsByDifficulty = async (difficulty) => {
+  const cleanDifficulty = String(difficulty || "").trim().toLowerCase();
+
+  if (!VALID_DIFFICULTIES.includes(cleanDifficulty)) {
+    throw new Error("Invalid difficulty. Use easy, medium, or hard.");
+  }
+
+  const functions = getFunctions(getApp(), FUNCTIONS_REGION);
+  const getQuestions = httpsCallable(functions, "getDungeonBattleQuestions");
+
+  const result = await getQuestions({ difficulty: cleanDifficulty });
+  const questions = Array.isArray(result.data?.questions)
+    ? result.data.questions
+    : [];
+
+  return shuffleArray(questions);
+};
+
 
 export const getBattleQuestionsByGrade = async (gradeLevel) => {
   const cleanGradeLevel = normalizeGradeLevel(gradeLevel);

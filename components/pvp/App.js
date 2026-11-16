@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 
 import {
+  ImageBackground,
   Modal,
   Pressable,
   Text,
@@ -72,12 +73,24 @@ export default function App() {
 
         {/* Waiting for opponent */}
         {phase === "wait" && (
-          <View style={st.lobby}>
-            <Text style={st.logo}>Waiting…</Text>
+          <ImageBackground
+            source={require("../../assets/images/battleBg.png")}
+            resizeMode="cover"
+            style={st.lobbyBackground}
+            imageStyle={st.lobbyBackgroundImage}
+          >
+            <View style={[st.lobby, st.lobbyBackdrop]}>
+              <Text style={st.waitingTitle}>Waiting…</Text>
 
             <Text style={st.sub}>
               Waiting for someone who entered the same room words.
             </Text>
+
+            {!!room.trim() && (
+              <Text style={st.waitingRoomName}>
+                Room: {room.trim()}
+              </Text>
+            )}
 
             {!!status && (
               <Text style={st.status}>{status}</Text>
@@ -89,7 +102,8 @@ export default function App() {
             >
               <Text style={st.btnTxt}>Cancel</Text>
             </Pressable>
-          </View>
+            </View>
+          </ImageBackground>
         )}
 
         {/* Duel */}

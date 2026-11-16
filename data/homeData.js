@@ -8,7 +8,6 @@ export const sampleStudent = {
   maxXp: 150,
   hp: 100,
   power: 10,
-  energy: 50,
   avatar: null,
 };
 

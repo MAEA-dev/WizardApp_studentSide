@@ -21,18 +21,15 @@ export default function StatsRow({ stats, layout }) {
             styles.statBox,
             stat.type === "hp" && styles.hpBox,
             stat.type === "power" && styles.powerBox,
-            stat.type === "energy" && styles.energyBox,
             {
               height: statHeight,
             },
           ]}
         >
           <Text style={styles.statIcon}>{stat.icon}</Text>
-
-          <View style={styles.statTextArea}>
-            <Text style={styles.statLabel}>{stat.label}</Text>
-            <Text style={styles.statValue}>{stat.value}</Text>
-          </View>
+          <Text style={styles.statValue}>
+            {stat.label}: {stat.value}
+          </Text>
         </View>
       ))}
     </View>
@@ -48,13 +45,13 @@ const styles = StyleSheet.create({
   },
 
   statBox: {
-    width: "30%",
+    width: "48%",
     backgroundColor: "rgba(20, 18, 47, 0.94)",
     borderWidth: 2,
     borderRadius: 11,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -67,29 +64,15 @@ const styles = StyleSheet.create({
     borderColor: "#FFD447",
   },
 
-  energyBox: {
-    borderColor: "#38BDF8",
-  },
-
   statIcon: {
-    fontSize: 15,
-    marginRight: 4,
-  },
-
-  statTextArea: {
-    alignItems: "flex-start",
-  },
-
-  statLabel: {
-    fontFamily: Fonts.pixel,
-    fontSize: 7,
-    color: "#FFFFFF",
-    marginBottom: 3,
+    fontSize: 17,
   },
 
   statValue: {
     fontFamily: Fonts.pixel,
     fontSize: 9,
     color: "#FFFFFF",
+    textAlign: "center",
+    transform: [{ translateY: 2 }],
   },
 });

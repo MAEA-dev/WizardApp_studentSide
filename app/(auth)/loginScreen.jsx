@@ -20,6 +20,7 @@ import { useLoader } from "../../context/LoaderContext";
 import {
   getAuthErrorMessage,
   loginUsername,
+  logoutUser,
   sendPasswordResetForIdentifier,
 } from "../../services/firebaseAuth";
 import { prepareStudentAfterLogin } from "../../services/studentDataService";
@@ -58,7 +59,12 @@ const LoginScreen = () => {
         password,
       });
 
-      await prepareStudentAfterLogin();
+      try {
+        await prepareStudentAfterLogin();
+      } catch (error) {
+        await logoutUser();
+        throw error;
+      }
 
       router.replace("(tabs)/home");
     } catch (error) {

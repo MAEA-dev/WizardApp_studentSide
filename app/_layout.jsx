@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View } from "react-native";
-import { Stack } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, View } from "react-native";
+import { Stack, useRouter } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import * as Network from "expo-network";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -9,6 +11,7 @@ import { Asset } from "expo-asset";
 
 import { LoaderProvider } from "../context/LoaderContext";
 import { IMAGE_ASSETS } from "../constants/preloadAssets";
+import { auth } from "../services/firebaseConfig";
 
 import {
   Fredoka_600SemiBold,
@@ -39,6 +42,8 @@ const preloadImages = async () => {
 };
 
 export default function RootLayout() {
+  const router = useRouter();
+  const connectivityLogoutInProgress = useRef(false);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -64,6 +69,54 @@ export default function RootLayout() {
   }, []);
 
   const isAppReady = assetsLoaded && (fontsLoaded || fontError);
+
+  useEffect(() => {
+    if (!isAppReady) return undefined;
+
+    let currentUser = null;
+    let isOffline = false;
+    let disposed = false;
+
+    const signOutIfOffline = async () => {
+      if (!currentUser || !isOffline || connectivityLogoutInProgress.current) {
+        return;
+      }
+
+      connectivityLogoutInProgress.current = true;
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.warn("Could not sign out after connection loss:", error);
+      }
+
+      if (!disposed) {
+        router.replace("/(auth)/loginScreen");
+        Alert.alert(
+          "Connection lost",
+          "You have been returned to Login. Reconnect to the internet and sign in again."
+        );
+      }
+    };
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (!user) connectivityLogoutInProgress.current = false;
+      signOutIfOffline();
+    });
+
+    const networkSubscription = Network.addNetworkStateListener((state) => {
+      isOffline =
+        state.isConnected === false || state.isInternetReachable === false;
+      if (!isOffline) connectivityLogoutInProgress.current = false;
+      signOutIfOffline();
+    });
+
+    return () => {
+      disposed = true;
+      unsubscribeAuth();
+      networkSubscription.remove();
+    };
+  }, [isAppReady, router]);
 
   const handleRootLayout = useCallback(async () => {
     if (!isAppReady) return;

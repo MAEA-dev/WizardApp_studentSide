@@ -142,6 +142,11 @@ export const getAuthErrorMessage = (error) => {
     case "auth/network-request-failed":
       return "Check your internet connection.";
 
+    case "app/connection-timeout":
+    case "unavailable":
+    case "firestore/unavailable":
+      return "Your internet is unavailable or too slow. Reconnect and try again.";
+
     case "auth/invalid-email":
       return "Enter a valid email address or username.";
 
